@@ -1,6 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
+<nav class="navbar navbar-expand-sm navbar-dark border-bottom border-1 border-white" style="background-color: #0e2238">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">Trang chủ</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mynavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mynavbar">
+            <ul class="navbar-nav me-auto">
+                {% for c in categories %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/?category_id={{ c.id }}">{{ c.name }}</a>
+                </li>
+                {% endfor %}
+                <li class="nav-item">
+                    <a class="nav-link text-warning" href="/login">Đăng nhập</a>
+                </li>
+            </ul>
+            {% if products %}
+            <form method="get" action="/" class="d-flex">
+                <input class="form-control me-2" type="text" name="kw" placeholder="Tìm sản phẩm">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</nav>
