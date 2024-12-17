@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, Float, String, ForeignKey, Boolean, Enum
     CheckConstraint, create_engine, text
 from sqlalchemy.event import listens_for
 from sqlalchemy.orm import relationship, declared_attr
-from app import db, app, migrate
+from __init__ import db, app, migrate
 from enum import Enum as Enumerate
 from flask_login import UserMixin
 from datetime import date
