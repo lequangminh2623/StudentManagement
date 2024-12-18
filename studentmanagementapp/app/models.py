@@ -1,60 +1,57 @@
+from email.policy import default
+
 from faker import Faker
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, Boolean, Enum, Date, UniqueConstraint, \
-    CheckConstraint, create_engine, text
-from sqlalchemy.event import listens_for
+    CheckConstraint
 from sqlalchemy.orm import relationship, declared_attr
-from __init__ import db, app, migrate
+from app import db, app, migrate
 from enum import Enum as Enumerate
 from flask_login import UserMixin
 from datetime import date
-from sqlalchemy import event
 
 
 
 
-engine = create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
+class Role(Enumerate):
+    ADMIN = 1
+    STAFF = 2
+    TEACHER = 3
+    STUDENT = 4
 
 
-class LoaiTaiKhoan(Enumerate):
-    NGUOIQUANTRI = 1
-    NHANVIEN = 2
-    GIAOVIEN = 3
-    HOCSINH = 4
-
-
-class TaiKhoan(db.Model, UserMixin):
+class User(db.Model, UserMixin):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_dang_nhap = Column(String(50), unique=True, nullable=False)
-    mat_khau = Column(String(100), nullable=False)
-    anh_dai_dien = Column(String(100),
+    username = Column(String(50), unique=True, nullable=False)
+    password = Column(String(100), nullable=False)
+    avatar = Column(String(100),
                     default='https://res.cloudinary.com/dqw4mc8dg/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1733391370/aj6sc6isvelwkotlo1vw.png')
-    loai_tai_khoan = Column(Enum(LoaiTaiKhoan), default=LoaiTaiKhoan.HOCSINH)
-    nguoi_quan_tri = relationship("NguoiQuanTri", back_populates="tai_khoan", lazy=True)
-    nhan_vien = relationship("NhanVien", back_populates="tai_khoan", lazy=True)
-    giao_vien = relationship("GiaoVien", back_populates="tai_khoan", lazy=True)
-    hoc_sinh = relationship("HocSinh", back_populates="tai_khoan", lazy=True)
+    role = Column(Enum(Role), default=Role.STUDENT)
+    admin_info = relationship("AdminInfo", back_populates="user", lazy=True)
+    staff_info = relationship("StaffInfo", back_populates="user", lazy=True)
+    teacher_info = relationship("TeacherInfo", back_populates="user", lazy=True)
+    student_info = relationship("StudentInfo", back_populates="user", lazy=True)
 
     def __str__(self):
-        return self.ten_dang_nhap
+        return self.username
 
 
-class NguoiDung(db.Model):
+class UserInfo(db.Model):
     __abstract__ = True
 
     @declared_attr
-    def ho_ten(cls):
+    def name(cls):
         return Column(String(50), nullable=False)
 
     @declared_attr
-    def gioi_tinh(cls):
+    def gender(cls):
         return Column(Boolean, nullable=False)
 
     @declared_attr
-    def sdt(cls):
+    def phone(cls):
         return Column(String(10), unique=True, nullable=False)
 
     @declared_attr
-    def dia_chi(cls):
+    def address(cls):
         return Column(String(100), nullable=False)
 
     @declared_attr
@@ -62,584 +59,432 @@ class NguoiDung(db.Model):
         return Column(String(50), unique=True, nullable=False)
 
     @declared_attr
-    def ngay_sinh(cls):
+    def birthday(cls):
         return Column(Date, nullable=False)
 
     @declared_attr
-    def trang_thai(cls):
+    def status(cls):
         return Column(Boolean, nullable=False)
 
     @declared_attr
-    def tai_khoan_id(cls):
-        return Column(Integer, ForeignKey(TaiKhoan.id, ondelete='SET NULL'), unique=True)
+    def user_id(cls):
+        return Column(Integer, ForeignKey(User.id, ondelete='SET NULL'), unique=True)
 
     @declared_attr
-    def tai_khoan(cls):
-        return relationship(TaiKhoan, back_populates='nguoi_quan_tri', lazy=True)
+    def user(cls):
+        return relationship(User, back_populates='user_info', lazy=True)
 
     def __str__(self):
-        return self.ho_ten
+        return self.name
 
 
-class NguoiQuanTri(NguoiDung):
+class AdminInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    # Thiết lập back_populates với lớp TaiKhoan
-    tai_khoan = relationship(TaiKhoan, back_populates="nguoi_quan_tri", lazy=True)
+    user = relationship(User, back_populates="admin_info", lazy=True)
 
 
-class NhanVien(NguoiDung):
+class StaffInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    # Thiết lập back_populates với lớp TaiKhoan
-    tai_khoan = relationship(TaiKhoan, back_populates="nhan_vien", lazy=True)
+    user = relationship(User, back_populates="staff_info", lazy=True)
 
 
-class GiaoVien(NguoiDung):
+class TeacherInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    # Thiết lập back_populates với lớp TaiKhoan
-    tai_khoan = relationship(TaiKhoan, back_populates="giao_vien", lazy=True)
+    user = relationship(User, back_populates="teacher_info", lazy=True)
 
 
-class NamHoc(db.Model):
+class SchoolYear(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_nam_hoc = Column(String(50), unique=True, nullable=False)
+    school_year_name = Column(String(50), unique=True, nullable=False)
 
 
-class LoaiHocKy(Enumerate):
-    HK1 = 'Học kỳ 1'
-    HK2 = 'Học kỳ 2'
+class SemesterType(Enumerate):
+    FIRSTTERM = 1
+    SECONDTERM = 2
 
 
-class HocKy(db.Model):
+class Semester(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_hoc_ky = Column(Enum(LoaiHocKy), nullable=False)
-    nam_hoc_id = Column(Integer, ForeignKey(NamHoc.id, ondelete='RESTRICT'), nullable=False)
-    nam_hoc = relationship(NamHoc, backref='ds_hoc_ky', lazy=True)
+    semester_name = Column(Enum(SemesterType), nullable=False)
+    school_year_id = Column(Integer, ForeignKey(SchoolYear.id, ondelete='RESTRICT'), nullable=False)
+    school_year = relationship(SchoolYear, backref='semesters', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('ten_hoc_ky', 'nam_hoc_id', name='uq_tenhocky_namhoc'),
+        UniqueConstraint('semester_name', 'school_year_id', name='uq_semestername_schoolyearid'),
     )
 
     def __str__(self):
-        return self.ten_hoc_ky
+        return self.semester_name
 
 
-class LoaiKhoiLop(Enumerate):
-    KHOI_10 = 'Khối 10'
-    KHOI_11 = 'Khối 11'
-    KHOI_12 = 'Khối 12'
+class GradeType(Enumerate):
+    GRADE10 = 10
+    GRADE11 = 11
+    GRADE12 = 12
 
 
-class KhoiLop(db.Model):
+class Grade(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_khoi = Column(Enum(LoaiKhoiLop), nullable=False)
-    nam_hoc_id = Column(Integer, ForeignKey(NamHoc.id, ondelete='RESTRICT'), nullable=False)
-    nam_hoc = relationship(NamHoc, backref='ds_khoi_lop', lazy=True)
+    grade_name = Column(Enum(GradeType), nullable=False)
+    school_year_id = Column(Integer, ForeignKey(SchoolYear.id, ondelete='RESTRICT'), nullable=False)
+    school_year = relationship(SchoolYear, backref='grades', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('ten_khoi', 'nam_hoc_id', name='uq_tenkhoi_namhoc'),
+        UniqueConstraint('grade_name', 'school_year_id', name='uq_gradename_schoolyearid'),
     )
 
     def __str__(self):
-        return self.ten_khoi
+        return self.grade_name
 
 
-class LopHoc(db.Model):
+class Classroom(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_lop = Column(String(50), nullable=False)
-    si_so = Column(Integer, nullable=False)
-    khoi_lop_id = Column(ForeignKey(KhoiLop.id, ondelete='RESTRICT'), nullable=False)
-    khoi_lop = relationship(KhoiLop, backref='ds_lop_hoc', lazy=True)
+    classroom_name = Column(String(50), nullable=False)
+    student_number = Column(Integer, nullable=False, default=0)
+    grade_id = Column(ForeignKey(Grade.id, ondelete='RESTRICT'), nullable=False)
+    grade = relationship(Grade, backref='classrooms', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('ten_lop', 'khoi_lop_id', name='uq_tenlop_khoilop'),
+        UniqueConstraint('classroom_name', 'grade_id', name='uq_classroomname_gradeid'),
     )
 
     def __str__(self):
-        return self.ten_lop
+        return self.classroom_name
 
 
-class TrangThaiHSXT(Enumerate):
-    CHOXETTUYEN = 1
-    DATRUNGTUYEN = 2
-    KHONGTRUNGTUYEN = 3
+class ApplicationFormStatus(Enumerate):
+    PENDING = 1
+    ACCEPTED = 2
+    REJECTED = 3
 
 
-class HoSoXetTuyen(db.Model):
+class ApplicationForm(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ho_ten = Column(String(50), nullable=False)
-    gioi_tinh = Column(Boolean, nullable=False)
-    sdt = Column(String(10), unique=True, nullable=False)
-    dia_chi = Column(String(50), nullable=False)
+    name = Column(String(50), nullable=False)
+    gender = Column(Boolean, nullable=False)
+    phone = Column(String(10), unique=True, nullable=False)
+    address = Column(String(50), nullable=False)
     email = Column(String(50), unique=True, nullable=False)
-    ngay_sinh = Column(Date, nullable=False)
-    trang_thai = Column(Enum(TrangThaiHSXT), default=TrangThaiHSXT.CHOXETTUYEN, nullable=False)
+    birthday = Column(Date, nullable=False)
+    status = Column(Enum(ApplicationFormStatus), default=ApplicationFormStatus.PENDING, nullable=False)
 
     def __str__(self):
-        return self.ho_ten
+        return self.name
 
 
-class HocSinh(NguoiDung):
+class StudentInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ho_so_xet_tuyen_id = Column(Integer, ForeignKey(HoSoXetTuyen.id, ondelete='SET NULL'), unique=True)
-    ho_so_xet_tuyen = relationship(HoSoXetTuyen, backref='hoc_sinh', lazy=True)
-    tai_khoan = relationship("TaiKhoan", back_populates="hoc_sinh", lazy=True)
+    application_form_id = Column(Integer, ForeignKey(ApplicationForm.id, ondelete='SET NULL'), unique=True)
+    application_form = relationship(ApplicationForm, backref='student_info', lazy=True)
+    user = relationship("User", back_populates="student_info", lazy=True)
 
 
-class MonHoc(db.Model):
+class Subject(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_mon_hoc = Column(String(50), nullable=False, unique=True)
+    subject_name = Column(String(50), nullable=False, unique=True)
 
     def __str__(self):
-        return self.ten_mon_hoc
+        return self.subject_name
 
 
-class ChuongTrinhHoc(db.Model):
+class Curriculum(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_chuong_trinh = Column(String(50), nullable=False)
-    khoi_lop_id = Column(Integer, ForeignKey(KhoiLop.id, ondelete='CASCADE'), nullable=False)
-    khoi_lop = relationship(KhoiLop, backref='ds_chuong_trinh_hoc', lazy=True)
-    mon_hoc_id = Column(Integer, ForeignKey(MonHoc.id, ondelete='CASCADE'), nullable=False)
-    mon_hoc = relationship(MonHoc, backref='ds_chuong_trinh_hoc', lazy=True)
+    curriculum_name = Column(String(50), nullable=False)
+    grade_id = Column(Integer, ForeignKey(Grade.id, ondelete='CASCADE'), nullable=False)
+    grade = relationship(Grade, backref='curriculums', lazy=True)
+    subject_id = Column(Integer, ForeignKey(Subject.id, ondelete='CASCADE'), nullable=False)
+    subject = relationship(Subject, backref='curriculums', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('khoi_lop_id', 'mon_hoc_id', name='uq_khoilop_monhoc'),
+        UniqueConstraint('grade_id', 'subject_id', name='uq_gradeid_subjectid'),
     )
 
     def __str__(self):
-        return self.ten_chuong_trinh
+        return self.curriculum_name
 
 
-class BaoCao(db.Model):
+class Report(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_bao_cao = Column(String(50), nullable=False)
-    mon_hoc_id = Column(Integer, ForeignKey(MonHoc.id, ondelete='CASCADE'), nullable=False)
-    mon_hoc = relationship(MonHoc, backref='ds_bao_cao', lazy=True)
-    hoc_ky_id = Column(Integer, ForeignKey(HocKy.id, ondelete='CASCADE'), nullable=False)
-    hoc_ky = relationship(HocKy, backref='ds_bao_cao', lazy=True)
+    report_name = Column(String(50), nullable=False)
+    subject_id = Column(Integer, ForeignKey(Subject.id, ondelete='CASCADE'), nullable=False)
+    subject = relationship(Subject, backref='reports', lazy=True)
+    semester_id = Column(Integer, ForeignKey(Semester.id, ondelete='CASCADE'), nullable=False)
+    semester = relationship(Semester, backref='reports', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('mon_hoc_id', 'hoc_ky_id', name='uq_tenkhoi_namhoc'),
+        UniqueConstraint('subject_id', 'semester_id', name='uq_subjectid_semesterid'),
     )
 
     def __str__(self):
-        return self.ten_bao_cao
+        return self.report_name
 
 
-class ThongKe(db.Model):
+class Statistic(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    so_luong_dat = Column(Integer, nullable=False)
-    ti_le = Column(Float, nullable=False)
-    lop_hoc_id = Column(Integer, ForeignKey(LopHoc.id, ondelete='CASCADE'), nullable=False)
-    lop_hoc = relationship(LopHoc, backref='ds_thong_ke', lazy=True)
-    bao_cao_id = Column(Integer, ForeignKey(BaoCao.id, ondelete='CASCADE'), nullable=False)
-    bao_cao = relationship(BaoCao, backref='ds_thong_ke', lazy=False)
+    pass_count = Column(Integer, nullable=False)
+    pass_rate = Column(Float, nullable=False)
+    classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='CASCADE'), nullable=False)
+    classroom = relationship(Classroom, backref='statistics', lazy=True)
+    report_id = Column(Integer, ForeignKey(Report.id, ondelete='CASCADE'), nullable=False)
+    report = relationship(Report, backref='statistics', lazy=False)
 
     __table_args__ = (
-        UniqueConstraint('lop_hoc_id', 'bao_cao_id', name='uq_lophoc_baocao'),
+        UniqueConstraint('classroom_id', 'report_id', name='uq_classroomid_reportid'),
     )
 
     def __str__(self):
-        return self.lop_hoc
+        return self.classroom
 
 
-class BangDiem(db.Model):
+class Transcript(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_bang_diem = Column(String(50), nullable=False)
-    hoan_thanh = Column(Boolean, nullable=False, default=False)
-    lop_hoc_id = Column(Integer, ForeignKey(LopHoc.id, ondelete='CASCADE'), nullable=False)
-    lop_hoc = relationship(LopHoc, backref='ds_bang_diem', lazy=True)
-    chuong_trinh_hoc_id = Column(Integer, ForeignKey(ChuongTrinhHoc.id, ondelete='RESTRICT'), nullable=False)
-    chuong_trinh_hoc = relationship(ChuongTrinhHoc, backref='ds_bang_diem', lazy=True)
-    hoc_ky_id = Column(Integer, ForeignKey(HocKy.id, ondelete='RESTRICT'), nullable=False)
-    hoc_ky = relationship(HocKy, backref='ds_bang_diem', lazy=True)
-    giao_vien_id = Column(Integer, ForeignKey(GiaoVien.id, ondelete='RESTRICT'), nullable=False)
-    giao_vien = relationship(GiaoVien, backref='ds_bang_diem', lazy=True)
+    transcript_name = Column(String(50), nullable=False)
+    is_done = Column(Boolean, nullable=False, default=False)
+    classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='CASCADE'), nullable=False)
+    classroom = relationship(Classroom, backref='transcripts', lazy=True)
+    curriculum_id = Column(Integer, ForeignKey(Curriculum.id, ondelete='RESTRICT'), nullable=False)
+    curriculum = relationship(Curriculum, backref='transcripts', lazy=True)
+    semester_id = Column(Integer, ForeignKey(Semester.id, ondelete='RESTRICT'), nullable=False)
+    semester = relationship(Semester, backref='transcripts', lazy=True)
+    teacher_info_id = Column(Integer, ForeignKey(TeacherInfo.id, ondelete='RESTRICT'), nullable=False)
+    teacher_info = relationship(TeacherInfo, backref='transcripts', lazy=True)
 
-    ds_diem15p = relationship("Diem15p", back_populates="bang_diem", lazy=True)
-    ds_diem1tiet = relationship("Diem1Tiet", back_populates="bang_diem", lazy=True)
-    ds_diemthi = relationship("DiemThi", back_populates="bang_diem", lazy=True)
-    ds_diemtbhk1 = relationship("DiemTBHK1", back_populates="bang_diem", lazy=True)
-    ds_diemtbhk2 = relationship("DiemTBHK2", back_populates="bang_diem", lazy=True)
+    fifteenminutescores = relationship("FifteenMinuteScore", back_populates="transcript", lazy=True)
+    oneperiodscores = relationship("OnePeriodScore", back_populates="transcript", lazy=True)
+    examscores = relationship("ExamScore", back_populates="transcript", lazy=True)
+    firsttermaveragescores = relationship("FirstTermAverageScore", back_populates="transcript", lazy=True)
+    secondtermaveragescores = relationship("SecondTermAverageScore", back_populates="transcript", lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('lop_hoc_id', 'chuong_trinh_hoc_id', 'hoc_ky_id', name='uq_tenkhoi_namhoc_hocky'),
+        UniqueConstraint('classroom_id', 'curriculum_id', 'semester_id', name='uq_classroomid_curriculumid_semesterid'),
     )
 
     def __str__(self):
-        return self.ten_bang_diem
+        return self.transcript_name
 
 
-class CotDiem(db.Model):
+class ScoreColumn(db.Model):
     __abstract__ = True
     id = Column(Integer, primary_key=True, autoincrement=True)
-    so_diem = Column(Float, CheckConstraint('so_diem >= 0 AND so_diem <= 10'), nullable=True)
-    he_so = Column(Integer, nullable=False)
-    ten_cot = Column(String(50), nullable=False)
-    bang_diem_id = Column(Integer, ForeignKey(BangDiem.id, ondelete='RESTRICT'), nullable=False)
+    score = Column(Float, CheckConstraint('score >= 0 AND score <= 10'), nullable=True)
+    weight = Column(Integer, nullable=False)
+    score_column_name = Column(String(50), nullable=False)
+    transcript_id = Column(Integer, ForeignKey(Transcript.id, ondelete='RESTRICT'), nullable=False)
 
     @declared_attr
-    def bang_diem(cls):
-        return relationship(BangDiem, back_populates=f"ds_{cls.__name__.lower()}", lazy=False)
+    def transcript(cls):
+        return relationship(Transcript, back_populates=f"{cls.__name__.lower()}s", lazy=False)
 
     def __str__(self):
-        return self.ten_cot
+        return self.score_column_name
 
 
-class Diem15p(CotDiem):
-    he_so = 1
-    ten = "Điểm 15 Phút"
-    hoc_sinh_id = Column(Integer, ForeignKey(HocSinh.id, ondelete='CASCADE'), nullable=False)
-    hoc_sinh = relationship(HocSinh, backref="ds_diem_15p", lazy=True)
+class FifteenMinuteScore(ScoreColumn):
+    weight = 1
+    score_column_name = "Fifteen Minute Score"
+    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
+    student_info = relationship(StudentInfo, backref="fifteen_minute_scores", lazy=True)
 
 
-class Diem1Tiet(CotDiem):
-    he_so = 2
-    ten = "Điểm 1 Tiết"
-    hoc_sinh_id = Column(Integer, ForeignKey(HocSinh.id, ondelete='CASCADE'), nullable=False)
-    hoc_sinh = relationship(HocSinh, backref="ds_diem_1tiet", lazy=True)
+class OnePeriodScore(ScoreColumn):
+    weight = 2
+    score_column_name = "One Period Score"
+    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
+    student_info = relationship(StudentInfo, backref="one_period_scores", lazy=True)
 
 
-class DiemThi(CotDiem):
-    he_so = 3
-    ten = "Điểm Thi"
-    hoc_sinh_id = Column(Integer, ForeignKey(HocSinh.id, ondelete='CASCADE'), nullable=False)
-    hoc_sinh = relationship(HocSinh, backref="ds_diem_thi", lazy=True)
+class ExamScore(ScoreColumn):
+    weight = 3
+    score_column_name = "Exam Score"
+    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
+    student_info = relationship(StudentInfo, backref="exam_scores", lazy=True)
 
 
-class DiemTBHK1(CotDiem):
-    he_so = 1
-    ten = "Điểm TB HK1"
-    hoc_sinh_id = Column(Integer, ForeignKey(HocSinh.id, ondelete='CASCADE'), nullable=False)
-    hoc_sinh = relationship(HocSinh, backref="ds_diem_tbhk1", lazy=True)
+class FirstTermAverageScore(ScoreColumn):
+    weight = 1
+    score_column_name = "First Term Average Score"
+    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
+    student_info = relationship(StudentInfo, backref="first_term_average_scores", lazy=True)
 
 
-class DiemTBHK2(CotDiem):
-    he_so = 2
-    ten = "Điểm TB HK2"
-    hoc_sinh_id = Column(Integer, ForeignKey(HocSinh.id, ondelete='CASCADE'), nullable=False)
-    hoc_sinh = relationship(HocSinh, backref="ds_diem_tbhk2", lazy=True)
+class SecondTermAverageScore(ScoreColumn):
+    weight = 2
+    score_column_name = "Second Term Average Score"
+    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
+    student_info = relationship(StudentInfo, backref="second_term_average_scores", lazy=True)
 
 
-class ChuyenLop(db.Model):
+class ClassroomTransfer(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    la_doi_lop = Column(Boolean, nullable=False, default=False)
-    ngay_chuyen = Column(Date, nullable=False, default=date.today)
-    lop_hoc_id = Column(Integer, ForeignKey(LopHoc.id, ondelete='RESTRICT'), nullable=False)
-    lop_hoc = relationship(LopHoc, backref='ds_chuyen_lop', lazy=True)
-    hoc_sinh_id = Column(Integer, ForeignKey(HocSinh.id, ondelete='CASCADE'), nullable=False)
-    hoc_sinh = relationship(HocSinh, backref='ds_chuyen_lop', lazy=True)
+    is_classroom_changed = Column(Boolean, nullable=False, default=False)
+    transfer_date = Column(Date, nullable=False, default=date.today)
+    classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='RESTRICT'), nullable=False)
+    classroom = relationship(Classroom, backref='classroom_transfers', lazy=True)
+    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
+    student_info = relationship(StudentInfo, backref='classroom_transfers', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('hoc_sinh_id', 'lop_hoc_id', 'ngay_chuyen', name='uq_hocsinh_lophoc_ngaychuyen'),
+        UniqueConstraint('student_info_id', 'classroom_id', 'transfer_date', name='uq_studentinfoid_classroom_transferdate'),
     )
 
 
-class QuyDinh(db.Model):
+class Rule(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    ten_quy_dinh = Column(String(50), unique=True, nullable=False)
-    gioi_han_duoi = Column(Integer)
-    gioi_han_tren = Column(Integer)
-    noi_dung = Column(String(500), unique=True, nullable=False)
+    rule_name = Column(String(50), unique=True, nullable=False)
+    min_value = Column(Integer)
+    max_value = Column(Integer)
+    rule_content = Column(String(500), unique=True, nullable=False)
 
     def __str__(self):
-        return self.ten
+        return self.score_column_name
 
 
-# @listens_for(KhoiLop.__table__, 'after_create')
-# def kiem_tra_khoi_lop_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_khoi_lop
-#     BEFORE INSERT OR DELETE ON khoi_lop
+# op.execute("""
+#     CREATE TRIGGER check_grade_insert
+#     BEFORE INSERT ON grade
 #     FOR EACH ROW
 #     BEGIN
-#         DECLARE count_khoi INT;
-#         DECLARE khoi_da_ton_tai SET('KHOI_10', 'KHOI_11', 'KHOI_12');
-#         DECLARE kiem_tra_khoi BOOLEAN;
+#         DECLARE count_grade INT;
 #
 #         -- Lấy số lượng khối lớp hiện tại của năm học
-#         SELECT COUNT(DISTINCT ten_khoi)
-#         INTO count_khoi
-#         FROM khoi_lop
-#         WHERE nam_hoc_id = IFNULL(NEW.nam_hoc_id, OLD.nam_hoc_id);
+#         SELECT COUNT(DISTINCT grade_name)
+#         INTO count_grade
+#         FROM grade
+#         WHERE school_year_id = NEW.school_year_id;
 #
-#         -- Lấy danh sách các khối lớp hiện tại
-#         SELECT GROUP_CONCAT(DISTINCT ten_khoi)
-#         INTO khoi_da_ton_tai
-#         FROM khoi_lop
-#         WHERE nam_hoc_id = IFNULL(NEW.nam_hoc_id, OLD.nam_hoc_id);
-#
-#         -- Kiểm tra nếu thêm mới
-#         IF INSERTING THEN
-#             IF count_khoi >= 3 THEN
-#                 SIGNAL SQLSTATE '45000'
-#                 SET MESSAGE_TEXT = 'Không thể thêm. Năm học đã đủ 3 khối lớp.';
-#             END IF;
-#         END IF;
-#
-#         -- Kiểm tra nếu xóa
-#         IF DELETING THEN
+#         -- Kiểm tra nếu vượt quá 3 khối lớp
+#         IF count_grade >= 3 THEN
 #             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Không thể xóa. Năm học phải có ít nhất 3 khối lớp.';
+#             SET MESSAGE_TEXT = 'Can not add. School year already have 3 grades.';
 #         END IF;
 #     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
-
-
-# @listens_for(HocSinh.__table__, 'after_create')
-# def kiem_tra_hoc_sinh_toi_da_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_hoc_sinh_toi_da
-#     BEFORE INSERT ON chuyen_lop
+#     """)
+#
+#     op.execute("""
+#     CREATE TRIGGER check_grade_delete
+#     BEFORE DELETE ON grade
+#     FOR EACH ROW
+#     BEGIN
+#         SIGNAL SQLSTATE '45000'
+#         SET MESSAGE_TEXT = 'Can not delete. School year must has at least 3 semester.';
+#     END;
+#     """)
+#
+#     op.execute("""
+#     CREATE TRIGGER check_max_student
+#     BEFORE INSERT ON classroom_transfer
 #     FOR EACH ROW
 #     BEGIN
 #         DECLARE student_count INT;
-#         DECLARE sl_lon_nhat INT;
+#         DECLARE max_count INT;
 #
 #         -- Lấy số lượng học sinh hiện tại trong lớp
 #         SELECT COUNT(*) INTO student_count
-#         FROM chuyen_lop
+#         FROM class_transfer
 #         WHERE lop_hoc_id = NEW.lop_hoc_id;
 #
 #         -- Lấy giới hạn học sinh của lớp từ bảng LopHoc
-#         SELECT gioi_han_tren INTO sl_lon_nhat
-#         FROM quy_dinh
+#         SELECT max_value INTO max_count
+#         FROM rule
 #         WHERE id = 4;
 #
 #         -- Nếu không có giới hạn, mặc định là 40
-#         IF sl_lon_nhat IS NULL THEN
-#             SET sl_lon_nhat = 40;
+#         IF max_count IS NULL THEN
+#             SET max_count = 40;
 #         END IF;
 #
 #         -- Kiểm tra nếu lớp đã đủ số học sinh theo giới hạn
-#         IF student_count >= sl_lon_nhat THEN
+#         IF student_count >= max_count THEN
 #             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Lớp học đã đạt giới hạn học sinh tối đa.';
+#             SET MESSAGE_TEXT = 'Classroom reached max student number.';
 #         END IF;
 #     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
-
-
-# @event.listens_for(HocSinh.__table__, 'after_create')
-# def kiem_tra_tuoi_hoc_sinh_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_tuoi_hoc_sinh
-#     BEFORE INSERT ON hoc_sinh
+#     """)
+#
+#     op.execute("""
+#     CREATE TRIGGER check_semester
+#     BEFORE INSERT ON semester
 #     FOR EACH ROW
 #     BEGIN
-#         DECLARE tuoi_nho_nhat INT;
-#         DECLARE tuoi_lon_nhat INT;
-#         DECLARE tuoi_hoc_sinh INT;
-#
-#         -- Lấy giới hạn độ tuổi từ bảng QuyDinh (id = 1)
-#         SELECT gioi_han_duoi, gioi_han_tren INTO tuoi_nho_nhat, tuoi_lon_nhat
-#         FROM quy_dinh
-#         WHERE id = 1;
-#
-#         -- Kiểm tra nếu không có quy định về độ tuổi, mặc định từ 0 đến 100
-#         IF tuoi_nho_nhat IS NULL OR tuoi_lon_nhat IS NULL THEN
-#             SET tuoi_nho_nhat = 15;
-#             SET tuoi_lon_nhat = 20;
-#         END IF;
-#
-#         -- Tính toán tuổi học sinh từ ngày sinh
-#         SET tuoi_hoc_sinh = TIMESTAMPDIFF(YEAR, NEW.ngay_sinh, CURDATE());
-#
-#         -- Kiểm tra xem tuổi học sinh có nằm trong giới hạn không
-#         IF tuoi_hoc_sinh < tuoi_nho_nhat OR tuoi_hoc_sinh > tuoi_lon_nhat THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Tuổi học sinh không hợp lệ, phải trong khoảng từ '
-#                                || tuoi_nho_nhat || ' đến ' || tuoi_lon_nhat || ' tuổi.';
-#         END IF;
-#     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
-
-
-# @listens_for(LopHoc.__table__, 'after_create')
-# def kiem_tra_lop_hoc_toi_thieu_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_lop_hoc_toi_thieu
-#     AFTER DELETE ON lop_hoc
-#     FOR EACH ROW
-#     BEGIN
-#         DECLARE lop_count INT;
-#
-#         -- Đếm số lớp học còn lại trong khối
-#         SELECT COUNT(*) INTO lop_count
-#         FROM lop_hoc
-#         WHERE khoi_lop_id = OLD.khoi_lop_id;
-#
-#         -- Nếu không còn lớp nào, báo lỗi
-#         IF lop_count < 1 THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Mỗi khối phải có ít nhất một lớp.';
-#         END IF;
-#     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
-
-
-# @event.listens_for(HocKy.__table__, 'after_create')
-# def kiem_tra_hoc_ky_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_hoc_ky
-#     BEFORE INSERT ON hoc_ky
-#     FOR EACH ROW
-#     BEGIN
-#         DECLARE hk_count INT;
+#         DECLARE semester_count INT;
+#         DECLARE existed_semester INT;
 #
 #         -- Đếm số học kỳ trong năm học hiện tại
-#         SELECT COUNT(*) INTO hk_count
-#         FROM hoc_ky
-#         WHERE nam_hoc_id = NEW.nam_hoc_id;
+#         SELECT COUNT(*) INTO semester_count
+#         FROM semester
+#         WHERE school_year_id = NEW.school_year_id;
 #
 #         -- Nếu năm học đã có 2 học kỳ, không cho phép thêm học kỳ thứ 3
-#         IF hk_count >= 2 THEN
+#         IF semester_count >= 2 THEN
 #             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Năm học này đã có đủ 2 học kỳ (HK1 và HK2).';
+#             SET MESSAGE_TEXT = 'School year already has 2 semesters.';
 #         END IF;
 #
 #         -- Kiểm tra xem cả hai học kỳ HK1 và HK2 đã có trong năm học chưa
-#         IF NEW.ten_hoc_ky = 'HK1' OR NEW.ten_hoc_ky = 'HK2' THEN
-#             DECLARE hoc_ky_da_ton_tai INT;
-#             SELECT COUNT(*) INTO hoc_ky_da_ton_tai
-#             FROM hoc_ky
-#             WHERE nam_hoc_id = NEW.nam_hoc_id
-#               AND (ten_hoc_ky = 'HK1' OR ten_hoc_ky = 'HK2');
+#         IF NEW.ten_semester = 'FIRSTTERM' OR NEW.ten_semester = 'SECONDTERM' THEN
+#             SELECT COUNT(*) INTO existed_semester
+#             FROM semester
+#             WHERE school_year_id = NEW.school_year_id
+#               AND (ten_semester = 'FIRSTTERM' OR ten_semester = 'SECONDTERM');
 #
 #             -- Nếu cả hai học kỳ HK1 và HK2 chưa tồn tại, cho phép thêm
-#             IF hoc_ky_da_ton_tai < 2 THEN
-#                 -- Allow insertion
-#             ELSE
+#             IF existed_semester >= 2 THEN
 #                 SIGNAL SQLSTATE '45000'
 #                 SET MESSAGE_TEXT = 'Năm học này đã có đủ 2 học kỳ (HK1 và HK2).';
 #             END IF;
 #         END IF;
 #     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
-
-
-# @event.listens_for(Diem15p.__table__, 'after_create')
-# def kiem_tra_diem15p_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_diem15p
-#     BEFORE INSERT ON diem15p
-#     FOR EACH ROW
-#     BEGIN
-#         DECLARE diem15p_count INT;
-#         SELECT COUNT(*) INTO diem15p_count
-#         FROM diem15p
-#         WHERE hoc_sinh_id = NEW.hoc_sinh_id
-#             AND bang_diem_id = NEW.bang_diem_id;
-#
-#         IF diem15p_count >= 5 THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Tối đa 5 cột điểm 15 phút cho mỗi học sinh trong chương trình học.';
-#         END IF;
-#
-#         IF diem15p_count < 1 THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Tối thiểu 1 cột điểm 15 phút cho mỗi học sinh trong chương trình học.';
-#         END IF;
-#     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
-
-
-# @event.listens_for(Diem1Tiet.__table__, 'after_create')
-# def kiem_tra_diem1tiet_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_diem1tiet
-#     BEFORE INSERT ON diem1_tiet
-#     FOR EACH ROW
-#     BEGIN
-#         DECLARE diem1tiet_count INT;
-#         SELECT COUNT(*) INTO diem1tiet_count
-#         FROM diem1_tiet
-#         WHERE hoc_sinh_id = NEW.hoc_sinh_id
-#             AND bang_diem_id = NEW.bang_diem_id;
-#
-#         IF diem1tiet_count >= 3 THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Tối đa 3 cột điểm 1 tiết cho mỗi học sinh trong chương trình học.';
-#         END IF;
-#
-#         IF diem15p_count < 1 THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Tối thiểu 1 cột điểm 1 tiết cho mỗi học sinh trong chương trình học.';
-#         END IF;
-#     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
-
-
-# @event.listens_for(DiemThi.__table__, 'after_create')
-# def kiem_tra_diemthi_trigger(target, connection, **kw):
-#     trigger_sql = """
-#     CREATE TRIGGER kiem_tra_diemthi
-#     BEFORE INSERT ON diem_thi
-#     FOR EACH ROW
-#     BEGIN
-#         DECLARE diemthi_count INT;
-#         SELECT COUNT(*) INTO diemthi_count
-#         FROM diem_thi
-#         WHERE hoc_sinh_id = NEW.hoc_sinh_id
-#             AND bang_diem_id = NEW.bang_diem_id;
-#
-#         IF diemthi_count != 1 THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Phải có 1 cột điểm thi cho mỗi học sinh trong chương trình học.';
-#         END IF;
-#     END;
-#     """
-#     with engine.connect() as connection:
-#         try:
-#             connection.execute(text(trigger_sql))
-#             print("Trigger created successfully.")
-#         except Exception as e:
-#             print(f"Error creating trigger: {e}")
+#     """)
 
 
 
 
 if __name__ == '__main__':
     with app.app_context():
-        pass
+        # namhoc=SchoolYear(school_year_name='2020-2021')
+        # db.session.add(namhoc)
+        #
+        # hocky1 = Semester(semester_name=SemesterType.FIRSTTERM, school_year_id=1)
+        # db.session.add(hocky1)
+        # hocky2 = Semester(semester_name=SemesterType.SECONDTERM, school_year_id=1)
+        # db.session.add(hocky2)
+        #
+        # khoi10 = Grade(grade_name=GradeType.GRADE10, school_year_id=1)
+        # db.session.add(khoi10)
+        # khoi11 = Grade(grade_name=GradeType.GRADE11, school_year_id=1)
+        # db.session.add(khoi11)
+        # khoi12 = Grade(grade_name=GradeType.GRADE12, school_year_id=1)
+        # db.session.add(khoi12)
+
+        # lop10A1 = Classroom(classroom_name='10A1', grade_id=1)
+        # db.session.add(lop10A1)
+        # lop10A2 = Classroom(classroom_name='10A2', grade_id=1)
+        # db.session.add(lop10A2)
+
+        # fake = Faker()
+        # fake_name = fake.name()
+        # fake_gender = fake.boolean()
+        # fake_phone = fake.unique.phone_number()[:10]
+        # fake_address = fake.address()
+        # fake_email = fake.unique.email()
+        # fake_birthday = fake.date_between(start_date="-20y", end_date="-15y")
+        # fake_status = True
+        #
+        # # user = User(username=fake.user_name(), password=fake.password())
+        # # db.session.add(user)
+        # # db.session.commit()
+        #
+        # hocsinh = StudentInfo(
+        #     name=fake_name,
+        #     gender=fake_gender,
+        #     phone=fake_phone,
+        #     address=fake_address,
+        #     email=fake_email,
+        #     birthday=fake_birthday,
+        #     status=fake_status,
+        # )
+        # db.session.add(hocsinh)
+
+
+
+        db.session.commit()

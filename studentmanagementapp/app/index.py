@@ -30,4 +30,5 @@ def score_input():
 
 
 if __name__ == '__main__':
+    import admin
     app.run(debug=True)
