@@ -1,3 +1,5 @@
+import hashlib
+
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, Boolean, Enum, Date, UniqueConstraint, \
     CheckConstraint
 from sqlalchemy.orm import relationship, declared_attr
@@ -288,7 +290,7 @@ class ClassroomTransfer(db.Model):
     )
 
     def __str__(self):
-        return 'a'
+        return self.id
 
 
 class Rule(db.Model):
@@ -300,6 +302,29 @@ class Rule(db.Model):
 
     def __str__(self):
         return self.rule_name
+
+
+@db.event.listens_for(ApplicationForm, 'after_update')
+def create_student_info_on_accepted(mapper, connection, target):
+    if target.status == ApplicationFormStatus.ACCEPTED and not hasattr(target, 'student_info'):
+        hashed_password = str(hashlib.md5('123456'.encode('utf-8')).hexdigest())
+        student_info = StudentInfo(
+            name=target.name,
+            gender=target.gender,
+            phone=target.phone,
+            address=target.address,
+            email=target.email,
+            birthday=target.birthday,
+            status=True,
+            user=User(
+                username=target.email,
+                password=hashed_password,
+                role=Role.STUDENT
+            ),
+            application_form=target
+        )
+        db.session.add(student_info)
+        connection.flush()
 
 
 if __name__ == "__main__":
