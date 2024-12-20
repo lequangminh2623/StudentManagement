@@ -1,5 +1,5 @@
 from app import db, app, dao
-from models import BangDiem, TaiKhoan, LoaiTaiKhoan
+from app.models import *
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
 from flask_admin import BaseView, expose

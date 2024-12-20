@@ -1,17 +1,16 @@
-"""Add Triggers
+"""add triggers
 
-Revision ID: 531ef28718a2
-Revises: 2b0649f4a574
-Create Date: 2024-12-18 14:18:28.307325
+Revision ID: c4b8de0b2328
+Revises: b5888cdcca43
+Create Date: 2024-12-20 00:22:08.682137
 
 """
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision = '531ef28718a2'
-down_revision = '2b0649f4a574'
+revision = 'c4b8de0b2328'
+down_revision = 'b5888cdcca43'
 branch_labels = None
 depends_on = None
 
@@ -38,7 +37,7 @@ def upgrade():
         -- Lấy số lượng học sinh hiện tại trong lớp
         SELECT student_number INTO student_count
         FROM classroom
-        WHERE classroom_id = NEW.classroom_id;
+        WHERE id = NEW.classroom_id;
 
         -- Lấy giới hạn học sinh của lớp từ bảng LopHoc
         SELECT max_value INTO max_count
@@ -55,7 +54,7 @@ def upgrade():
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Classroom reached max student number.';
         END IF;
-        
+
         UPDATE classroom
         SET student_number = student_number + 1
         WHERE id = NEW.classroom_id;
@@ -103,119 +102,109 @@ def upgrade():
     END;
     """)
 
-    op.execute("""  
-    CREATE TRIGGER check_fifteen_minute_score_insert
-    BEFORE INSERT ON fifteen_minute_score
-    FOR EACH ROW
-    BEGIN
-        DECLARE fifteen_minute_scores_count INT;
-        SELECT COUNT(*) INTO fifteen_minute_scores_count
-        FROM fifteen_minute_score
-        WHERE student_info_id = NEW.student_info_id
-            AND transcript_id = NEW.transcript_id;
-
-        IF fifteen_minute_scores_count >= 5 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Student already has maximum fifteen-minute score number.';
-        END IF;
-    END;
-    """)
-
     op.execute("""
-    CREATE TRIGGER check_fifteen_minute_score_delete
-    BEFORE DELETE ON fifteen_minute_score
+    CREATE TRIGGER check_score_insert
+    BEFORE INSERT ON score
     FOR EACH ROW
     BEGIN
-        DECLARE fifteen_minute_scores_count INT;
+        DECLARE score_count INT;
 
-        -- Đếm số lượng điểm 15 phút của học sinh và bảng điểm tương ứng
-        SELECT COUNT(*) INTO fifteen_minute_scores_count
-        FROM fifteen_minute_score
-        WHERE student_info_id = OLD.student_info_id
-            AND transcript_id = OLD.transcript_id;
+        -- Kiểm tra điểm 15 phút
+        IF NEW.score_type = 'FIFTEEN_MINUTE' THEN
+            SELECT COUNT(*) INTO score_count
+            FROM score
+            WHERE student_info_id = NEW.student_info_id
+              AND transcript_id = NEW.transcript_id
+              AND score_type = 'FIFTEEN_MINUTE';
 
-        -- Nếu số lượng điểm nhỏ hơn 1, không cho phép xóa
-        IF fifteen_minute_scores_count <= 1 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Student can not have less than 1 fifteen-minute score.';
-        END IF;
-    END;
-    """)
-
-    op.execute("""
-    CREATE TRIGGER check_one_period_score_delete
-    BEFORE DELETE ON one_period_score
-    FOR EACH ROW
-    BEGIN
-        DECLARE one_period_score_count INT;
-
-        -- Đếm số lượng điểm một tiết của học sinh và bảng điểm tương ứng
-        SELECT COUNT(*) INTO one_period_score_count
-        FROM one_period_score
-        WHERE student_info_id = OLD.student_info_id
-            AND transcript_id = OLD.transcript_id;
-
-        -- Nếu số lượng điểm nhỏ hơn 1, không cho phép xóa
-        IF one_period_score_count <= 1 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Cannot delete: Student has less than 1 one-period score left.';
-        END IF;
-    END;
-    """)
-
-    op.execute("""  
-    CREATE TRIGGER check_one_period_score_insert
-    BEFORE INSERT ON one_period_score
-    FOR EACH ROW
-    BEGIN
-        DECLARE one_period_score_count INT;
-        SELECT COUNT(*) INTO one_period_score_count
-        FROM one_period_score
-        WHERE student_info_id = NEW.student_info_id
-            AND transcript_id = NEW.transcript_id;
-
-        IF one_period_score_count >= 3 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Student already has maximum one period score number.';
-        END IF;
-    END;
-    """)
-
-    op.execute("""  
-    CREATE TRIGGER check_exam_score_insert
-    BEFORE INSERT ON exam_score
-    FOR EACH ROW
-    BEGIN
-        DECLARE exam_score_count INT;
-        SELECT COUNT(*) INTO exam_score_count
-        FROM exam_score
-        WHERE student_info_id = NEW.student_info_id
-            AND transcript_id = NEW.transcript_id;
-
-        IF exam_score_count >= 1 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Student must have at 1 exam score.';
-        END IF;
-    END;
-    """)
-
-    op.execute("""  
-        CREATE TRIGGER check_exam_score_delete
-        BEFORE DELETE ON exam_score
-        FOR EACH ROW
-        BEGIN
-            DECLARE exam_score_count INT;
-            SELECT COUNT(*) INTO exam_score_count
-            FROM exam_score
-            WHERE student_info_id = OLD.student_info_id
-                AND transcript_id = OLD.transcript_id;
-
-            IF exam_score_count <= 1 THEN
+            IF score_count >= 5 THEN
                 SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Student must have at 1 exam score.';
+                SET MESSAGE_TEXT = 'Student already has maximum fifteen-minute score number.';
             END IF;
-        END;
-        """)
+        END IF;
+
+        -- Kiểm tra điểm 1 tiết
+        IF NEW.score_type = 'ONE_PERIOD' THEN
+            SELECT COUNT(*) INTO score_count
+            FROM score
+            WHERE student_info_id = NEW.student_info_id
+              AND transcript_id = NEW.transcript_id
+              AND score_type = 'ONE_PERIOD';
+
+            IF score_count >= 3 THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Student already has maximum one-period score number.';
+            END IF;
+        END IF;
+
+        -- Kiểm tra điểm thi
+        IF NEW.score_type = 'EXAM' THEN
+            SELECT COUNT(*) INTO score_count
+            FROM score
+            WHERE student_info_id = NEW.student_info_id
+              AND transcript_id = NEW.transcript_id
+              AND score_type = 'EXAM';
+
+            IF score_count >= 1 THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Student can only have 1 exam score.';
+            END IF;
+        END IF;
+
+    END;
+    """)
+
+    op.execute("""
+    CREATE TRIGGER check_score_delete
+    BEFORE DELETE ON score
+    FOR EACH ROW
+    BEGIN
+        DECLARE score_count INT;
+
+        -- Kiểm tra điểm 15 phút
+        IF OLD.score_type = 'FIFTEEN_MINUTE' THEN
+            SELECT COUNT(*) INTO score_count
+            FROM score
+            WHERE student_info_id = OLD.student_info_id
+              AND transcript_id = OLD.transcript_id
+              AND score_type = 'FIFTEEN_MINUTE';
+
+            IF score_count <= 1 THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Student cannot have less than 1 fifteen-minute score.';
+            END IF;
+        END IF;
+
+        -- Kiểm tra điểm 1 tiết
+        IF OLD.score_type = 'ONE_PERIOD' THEN
+            SELECT COUNT(*) INTO score_count
+            FROM score
+            WHERE student_info_id = OLD.student_info_id
+              AND transcript_id = OLD.transcript_id
+              AND score_type = 'ONE_PERIOD';
+
+            IF score_count <= 1 THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Cannot delete: Student has less than 1 one-period score left.';
+            END IF;
+        END IF;
+
+        -- Kiểm tra điểm thi
+        IF OLD.score_type = 'EXAM' THEN
+            SELECT COUNT(*) INTO score_count
+            FROM score
+            WHERE student_info_id = OLD.student_info_id
+              AND transcript_id = OLD.transcript_id
+              AND score_type = 'EXAM';
+
+            IF score_count <= 1 THEN
+                SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Student must have at least 1 exam score.';
+            END IF;
+        END IF;
+
+    END;
+    """)
 
     op.execute("""
         CREATE TRIGGER check_student_age
@@ -231,7 +220,7 @@ def upgrade():
             FROM rule
             WHERE id = 1;
 
-            -- Kiểm tra nếu không có quy định về độ tuổi, mặc định từ 0 đến 100
+            -- Kiểm tra nếu không có quy định về độ tuổi, mặc định từ 15 đến 20
             IF min_age IS NULL OR max_age IS NULL THEN
                 SET min_age = 15;
                 SET max_age = 20;
@@ -275,27 +264,11 @@ def downgrade():
     """)
 
     op.execute("""
-    DROP TRIGGER IF EXISTS check_fifteen_minute_score_insert
+    DROP TRIGGER IF EXISTS check_score_delete
     """)
 
     op.execute("""
-    DROP TRIGGER IF EXISTS check_fifteen_minute_score_delete
-    """)
-
-    op.execute("""
-    DROP TRIGGER IF EXISTS check_one_period_score_insert
-    """)
-
-    op.execute("""
-    DROP TRIGGER IF EXISTS check_one_period_score_delete
-    """)
-
-    op.execute("""
-    DROP TRIGGER IF EXISTS check_exam_score_insert
-    """)
-
-    op.execute("""
-    DROP TRIGGER IF EXISTS check_exam_score_delete
+    DROP TRIGGER IF EXISTS check_score_insert
     """)
 
     op.execute("""

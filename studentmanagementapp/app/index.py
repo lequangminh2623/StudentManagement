@@ -1,10 +1,9 @@
 from flask import render_template, request
 from werkzeug.utils import redirect
-import dao
-from __init__ import app
+from app import dao
 import math
 from flask_login import login_user
-from models import *
+from app.models import *
 
 
 @app.route("/")
@@ -26,9 +25,3 @@ def score_input():
 # @login.user_loader
 # def load_user(user_id):
 #     return dao.get_user_by_id(user_id)
-
-
-
-if __name__ == '__main__':
-    import admin
-    app.run(debug=True)

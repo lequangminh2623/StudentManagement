@@ -11,7 +11,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-app.config["SQLALCHEMY_DATABASE_URI"]="mysql+pymysql://root:%s@localhost/studentmanagementdb?charset=utf8mb4" % quote("Abc123")
+app.secret_key = "HKJ68$^&JH*%568HNNMK"
+app.config["SQLALCHEMY_DATABASE_URI"]="mysql+pymysql://root:%s@localhost/studentmanagementdb?charset=utf8mb4" % quote(os.getenv("DB_PASSWORD"))
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["PAGE_SIZE"] = 5
 
@@ -24,10 +25,10 @@ migrate = Migrate(app, db)
 
 
 
-# cloudinary.config(
-#     cloud_name=os.getenv("CLOUD_NAME"),
-#     api_key=os.getenv("API_KEY"),
-#     api_secret=os.getenv("API_SECRET"),
-#     secure=True
-# )
+cloudinary.config(
+    cloud_name=os.getenv("CLOUD_NAME"),
+    api_key=os.getenv("API_KEY"),
+    api_secret=os.getenv("API_SECRET"),
+    secure=True
+)
 

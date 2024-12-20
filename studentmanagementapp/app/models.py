@@ -1,6 +1,3 @@
-from email.policy import default
-
-from faker import Faker
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, Boolean, Enum, Date, UniqueConstraint, \
     CheckConstraint
 from sqlalchemy.orm import relationship, declared_attr
@@ -8,8 +5,6 @@ from app import db, app, migrate
 from enum import Enum as Enumerate
 from flask_login import UserMixin
 from datetime import date
-
-
 
 
 class Role(Enumerate):
@@ -23,16 +18,17 @@ class User(db.Model, UserMixin):
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
-    avatar = Column(String(100),
+    avatar = Column(String(255),
                     default='https://res.cloudinary.com/dqw4mc8dg/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1733391370/aj6sc6isvelwkotlo1vw.png')
     role = Column(Enum(Role), default=Role.STUDENT)
-    admin_info = relationship("AdminInfo", back_populates="user", lazy=True)
-    staff_info = relationship("StaffInfo", back_populates="user", lazy=True)
-    teacher_info = relationship("TeacherInfo", back_populates="user", lazy=True)
-    student_info = relationship("StudentInfo", back_populates="user", lazy=True)
 
     def __str__(self):
         return self.username
+
+
+class Gender(Enumerate):
+    MALE = 1
+    FEMALE = 2
 
 
 class UserInfo(db.Model):
@@ -44,7 +40,7 @@ class UserInfo(db.Model):
 
     @declared_attr
     def gender(cls):
-        return Column(Boolean, nullable=False)
+        return Column(Enum(Gender), nullable=False)
 
     @declared_attr
     def phone(cls):
@@ -70,71 +66,70 @@ class UserInfo(db.Model):
     def user_id(cls):
         return Column(Integer, ForeignKey(User.id, ondelete='SET NULL'), unique=True)
 
-    @declared_attr
-    def user(cls):
-        return relationship(User, back_populates='user_info', lazy=True)
-
     def __str__(self):
         return self.name
 
 
 class AdminInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user = relationship(User, back_populates="admin_info", lazy=True)
+    user = relationship(User, backref="admin_info", lazy=True)
 
 
 class StaffInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user = relationship(User, back_populates="staff_info", lazy=True)
+    user = relationship(User, backref="staff_info", lazy=True)
 
 
 class TeacherInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user = relationship(User, back_populates="teacher_info", lazy=True)
+    user = relationship(User, backref="teacher_info", lazy=True)
 
 
 class SchoolYear(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     school_year_name = Column(String(50), unique=True, nullable=False)
 
+    def __str__(self):
+        return self.school_year_name
+
 
 class SemesterType(Enumerate):
-    FIRSTTERM = 1
-    SECONDTERM = 2
+    FIRST_TERM = 1
+    SECOND_TERM = 2
 
 
 class Semester(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    semester_name = Column(Enum(SemesterType), nullable=False)
+    semester_type = Column(Enum(SemesterType), nullable=False)
     school_year_id = Column(Integer, ForeignKey(SchoolYear.id, ondelete='RESTRICT'), nullable=False)
     school_year = relationship(SchoolYear, backref='semesters', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('semester_name', 'school_year_id', name='uq_semestername_schoolyearid'),
+        UniqueConstraint('semester_type', 'school_year_id', name='uq_semestertype_schoolyearid'),
     )
 
     def __str__(self):
-        return self.semester_name
+        return self.semester_type.name
 
 
 class GradeType(Enumerate):
-    GRADE10 = 10
-    GRADE11 = 11
-    GRADE12 = 12
+    GRADE_10 = 1
+    GRADE_11 = 2
+    GRADE_12 = 3
 
 
 class Grade(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    grade_name = Column(Enum(GradeType), nullable=False)
+    grade_type = Column(Enum(GradeType), nullable=False)
     school_year_id = Column(Integer, ForeignKey(SchoolYear.id, ondelete='RESTRICT'), nullable=False)
     school_year = relationship(SchoolYear, backref='grades', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('grade_name', 'school_year_id', name='uq_gradename_schoolyearid'),
+        UniqueConstraint('grade_type', 'school_year_id', name='uq_gradetype_schoolyearid'),
     )
 
     def __str__(self):
-        return self.grade_name
+        return self.grade_type.name
 
 
 class Classroom(db.Model):
@@ -161,9 +156,9 @@ class ApplicationFormStatus(Enumerate):
 class ApplicationForm(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), nullable=False)
-    gender = Column(Boolean, nullable=False)
+    gender = Column(Enum(Gender), nullable=False)
     phone = Column(String(10), unique=True, nullable=False)
-    address = Column(String(50), nullable=False)
+    address = Column(String(100), nullable=False)
     email = Column(String(50), unique=True, nullable=False)
     birthday = Column(Date, nullable=False)
     status = Column(Enum(ApplicationFormStatus), default=ApplicationFormStatus.PENDING, nullable=False)
@@ -176,7 +171,7 @@ class StudentInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
     application_form_id = Column(Integer, ForeignKey(ApplicationForm.id, ondelete='SET NULL'), unique=True)
     application_form = relationship(ApplicationForm, backref='student_info', lazy=True)
-    user = relationship("User", back_populates="student_info", lazy=True)
+    user = relationship("User", backref="student_info", lazy=True)
 
 
 class Subject(db.Model):
@@ -233,7 +228,7 @@ class Statistic(db.Model):
     )
 
     def __str__(self):
-        return self.classroom
+        return self.id
 
 
 class Transcript(db.Model):
@@ -243,17 +238,11 @@ class Transcript(db.Model):
     classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='CASCADE'), nullable=False)
     classroom = relationship(Classroom, backref='transcripts', lazy=True)
     curriculum_id = Column(Integer, ForeignKey(Curriculum.id, ondelete='RESTRICT'), nullable=False)
-    curriculum = relationship(Curriculum, backref='transcripts', lazy=True)
+    curriculum = relationship(Curriculum, lazy=False)
     semester_id = Column(Integer, ForeignKey(Semester.id, ondelete='RESTRICT'), nullable=False)
     semester = relationship(Semester, backref='transcripts', lazy=True)
     teacher_info_id = Column(Integer, ForeignKey(TeacherInfo.id, ondelete='RESTRICT'), nullable=False)
     teacher_info = relationship(TeacherInfo, backref='transcripts', lazy=True)
-
-    fifteenminutescores = relationship("FifteenMinuteScore", back_populates="transcript", lazy=True)
-    oneperiodscores = relationship("OnePeriodScore", back_populates="transcript", lazy=True)
-    examscores = relationship("ExamScore", back_populates="transcript", lazy=True)
-    firsttermaveragescores = relationship("FirstTermAverageScore", back_populates="transcript", lazy=True)
-    secondtermaveragescores = relationship("SecondTermAverageScore", back_populates="transcript", lazy=True)
 
     __table_args__ = (
         UniqueConstraint('classroom_id', 'curriculum_id', 'semester_id', name='uq_classroomid_curriculumid_semesterid'),
@@ -263,60 +252,30 @@ class Transcript(db.Model):
         return self.transcript_name
 
 
-class ScoreColumn(db.Model):
-    __abstract__ = True
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    score = Column(Float, CheckConstraint('score >= 0 AND score <= 10'), nullable=True)
-    weight = Column(Integer, nullable=False)
-    score_column_name = Column(String(50), nullable=False)
-    transcript_id = Column(Integer, ForeignKey(Transcript.id, ondelete='RESTRICT'), nullable=False)
+class ScoreType(Enumerate):
+    FIFTEEN_MINUTE = 1
+    ONE_PERIOD = 2
+    EXAM = 3
+    FIRST_TERM_AVERAGE = 1
+    SECOND_TERM_AVERAGE = 2
 
-    @declared_attr
-    def transcript(cls):
-        return relationship(Transcript, back_populates=f"{cls.__name__.lower()}s", lazy=False)
+
+class Score(db.Model):
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    score_number = Column(Float, CheckConstraint('score_number >= 0 AND score_number <= 10'), nullable=True)
+    score_type = Column(Enum(ScoreType), nullable=False)
+    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
+    student_info = relationship(StudentInfo, backref="scores", lazy=True)
+    transcript_id = Column(Integer, ForeignKey(Transcript.id, ondelete='RESTRICT'), nullable=False)
+    transcript = relationship("Transcript", backref="scores", lazy=True)
 
     def __str__(self):
-        return self.score_column_name
-
-
-class FifteenMinuteScore(ScoreColumn):
-    weight = 1
-    score_column_name = "Fifteen Minute Score"
-    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
-    student_info = relationship(StudentInfo, backref="fifteen_minute_scores", lazy=True)
-
-
-class OnePeriodScore(ScoreColumn):
-    weight = 2
-    score_column_name = "One Period Score"
-    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
-    student_info = relationship(StudentInfo, backref="one_period_scores", lazy=True)
-
-
-class ExamScore(ScoreColumn):
-    weight = 3
-    score_column_name = "Exam Score"
-    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
-    student_info = relationship(StudentInfo, backref="exam_scores", lazy=True)
-
-
-class FirstTermAverageScore(ScoreColumn):
-    weight = 1
-    score_column_name = "First Term Average Score"
-    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
-    student_info = relationship(StudentInfo, backref="first_term_average_scores", lazy=True)
-
-
-class SecondTermAverageScore(ScoreColumn):
-    weight = 2
-    score_column_name = "Second Term Average Score"
-    student_info_id = Column(Integer, ForeignKey(StudentInfo.id, ondelete='CASCADE'), nullable=False)
-    student_info = relationship(StudentInfo, backref="second_term_average_scores", lazy=True)
+        return self.score_type.name
 
 
 class ClassroomTransfer(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    is_classroom_changed = Column(Boolean, nullable=False, default=False)
+    is_classroom_change = Column(Boolean, nullable=False, default=False)
     transfer_date = Column(Date, nullable=False, default=date.today)
     classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='RESTRICT'), nullable=False)
     classroom = relationship(Classroom, backref='classroom_transfers', lazy=True)
@@ -324,8 +283,12 @@ class ClassroomTransfer(db.Model):
     student_info = relationship(StudentInfo, backref='classroom_transfers', lazy=True)
 
     __table_args__ = (
-        UniqueConstraint('student_info_id', 'classroom_id', 'transfer_date', name='uq_studentinfoid_classroom_transferdate'),
+        UniqueConstraint('student_info_id', 'classroom_id', 'transfer_date',
+                         name='uq_studentinfoid_classroom_transferdate'),
     )
+
+    def __str__(self):
+        return 'a'
 
 
 class Rule(db.Model):
@@ -336,37 +299,21 @@ class Rule(db.Model):
     rule_content = Column(String(500), unique=True, nullable=False)
 
     def __str__(self):
-        return self.score_column_name
+        return self.rule_name
 
 
-# op.execute("""
-#     CREATE TRIGGER check_grade_insert
-#     BEFORE INSERT ON grade
-#     FOR EACH ROW
-#     BEGIN
-#         DECLARE count_grade INT;
-#
-#         -- Lấy số lượng khối lớp hiện tại của năm học
-#         SELECT COUNT(DISTINCT grade_name)
-#         INTO count_grade
-#         FROM grade
-#         WHERE school_year_id = NEW.school_year_id;
-#
-#         -- Kiểm tra nếu vượt quá 3 khối lớp
-#         IF count_grade >= 3 THEN
-#             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'Can not add. School year already have 3 grades.';
-#         END IF;
-#     END;
-#     """)
-#
+if __name__ == "__main__":
+    with app.app_context():
+        pass
+
+# def upgrade():
 #     op.execute("""
 #     CREATE TRIGGER check_grade_delete
 #     BEFORE DELETE ON grade
 #     FOR EACH ROW
 #     BEGIN
 #         SIGNAL SQLSTATE '45000'
-#         SET MESSAGE_TEXT = 'Can not delete. School year must has at least 3 semester.';
+#         SET MESSAGE_TEXT = 'Can not delete. School year must has at least 3 grades.';
 #     END;
 #     """)
 #
@@ -379,9 +326,9 @@ class Rule(db.Model):
 #         DECLARE max_count INT;
 #
 #         -- Lấy số lượng học sinh hiện tại trong lớp
-#         SELECT COUNT(*) INTO student_count
-#         FROM class_transfer
-#         WHERE lop_hoc_id = NEW.lop_hoc_id;
+#         SELECT student_number INTO student_count
+#         FROM classroom
+#         WHERE classroom_id = NEW.classroom_id;
 #
 #         -- Lấy giới hạn học sinh của lớp từ bảng LopHoc
 #         SELECT max_value INTO max_count
@@ -398,93 +345,224 @@ class Rule(db.Model):
 #             SIGNAL SQLSTATE '45000'
 #             SET MESSAGE_TEXT = 'Classroom reached max student number.';
 #         END IF;
+#
+#         UPDATE classroom
+#         SET student_number = student_number + 1
+#         WHERE id = NEW.classroom_id;
 #     END;
 #     """)
 #
 #     op.execute("""
-#     CREATE TRIGGER check_semester
-#     BEFORE INSERT ON semester
+#     CREATE TRIGGER update_student_number_after_delete
+#     AFTER DELETE ON classroom_transfer
 #     FOR EACH ROW
 #     BEGIN
-#         DECLARE semester_count INT;
-#         DECLARE existed_semester INT;
+#         UPDATE classroom
+#         SET student_number = student_number - 1
+#         WHERE id = OLD.classroom_id;
+#     END;
+#     """)
 #
-#         -- Đếm số học kỳ trong năm học hiện tại
-#         SELECT COUNT(*) INTO semester_count
-#         FROM semester
-#         WHERE school_year_id = NEW.school_year_id;
+#     op.execute("""
+#     CREATE TRIGGER check_semester_delete
+#     BEFORE DELETE ON semester
+#     FOR EACH ROW
+#     BEGIN
+#         SIGNAL SQLSTATE '45000'
+#         SET MESSAGE_TEXT = 'Cannot delete semester: Not enough semesters for this school year.';
+#     END;
+#     """)
 #
-#         -- Nếu năm học đã có 2 học kỳ, không cho phép thêm học kỳ thứ 3
-#         IF semester_count >= 2 THEN
+#     op.execute("""
+#     CREATE TRIGGER check_min_classroom
+#     BEFORE DELETE ON classroom
+#     FOR EACH ROW
+#     BEGIN
+#         DECLARE class_count INT;
+#
+#         -- Đếm số lớp học còn lại trong khối
+#         SELECT COUNT(*) INTO class_count
+#         FROM classroom
+#         WHERE grade_id = OLD.grade_id;
+#
+#         -- Nếu không còn lớp nào, báo lỗi
+#         IF class_count <= 1 THEN
 #             SIGNAL SQLSTATE '45000'
-#             SET MESSAGE_TEXT = 'School year already has 2 semesters.';
-#         END IF;
-#
-#         -- Kiểm tra xem cả hai học kỳ HK1 và HK2 đã có trong năm học chưa
-#         IF NEW.ten_semester = 'FIRSTTERM' OR NEW.ten_semester = 'SECONDTERM' THEN
-#             SELECT COUNT(*) INTO existed_semester
-#             FROM semester
-#             WHERE school_year_id = NEW.school_year_id
-#               AND (ten_semester = 'FIRSTTERM' OR ten_semester = 'SECONDTERM');
-#
-#             -- Nếu cả hai học kỳ HK1 và HK2 chưa tồn tại, cho phép thêm
-#             IF existed_semester >= 2 THEN
-#                 SIGNAL SQLSTATE '45000'
-#                 SET MESSAGE_TEXT = 'Năm học này đã có đủ 2 học kỳ (HK1 và HK2).';
-#             END IF;
+#             SET MESSAGE_TEXT = 'Grade must have at least 1 classroom.';
 #         END IF;
 #     END;
 #     """)
-
-
-
-
-if __name__ == '__main__':
-    with app.app_context():
-        # namhoc=SchoolYear(school_year_name='2020-2021')
-        # db.session.add(namhoc)
-        #
-        # hocky1 = Semester(semester_name=SemesterType.FIRSTTERM, school_year_id=1)
-        # db.session.add(hocky1)
-        # hocky2 = Semester(semester_name=SemesterType.SECONDTERM, school_year_id=1)
-        # db.session.add(hocky2)
-        #
-        # khoi10 = Grade(grade_name=GradeType.GRADE10, school_year_id=1)
-        # db.session.add(khoi10)
-        # khoi11 = Grade(grade_name=GradeType.GRADE11, school_year_id=1)
-        # db.session.add(khoi11)
-        # khoi12 = Grade(grade_name=GradeType.GRADE12, school_year_id=1)
-        # db.session.add(khoi12)
-
-        # lop10A1 = Classroom(classroom_name='10A1', grade_id=1)
-        # db.session.add(lop10A1)
-        # lop10A2 = Classroom(classroom_name='10A2', grade_id=1)
-        # db.session.add(lop10A2)
-
-        # fake = Faker()
-        # fake_name = fake.name()
-        # fake_gender = fake.boolean()
-        # fake_phone = fake.unique.phone_number()[:10]
-        # fake_address = fake.address()
-        # fake_email = fake.unique.email()
-        # fake_birthday = fake.date_between(start_date="-20y", end_date="-15y")
-        # fake_status = True
-        #
-        # # user = User(username=fake.user_name(), password=fake.password())
-        # # db.session.add(user)
-        # # db.session.commit()
-        #
-        # hocsinh = StudentInfo(
-        #     name=fake_name,
-        #     gender=fake_gender,
-        #     phone=fake_phone,
-        #     address=fake_address,
-        #     email=fake_email,
-        #     birthday=fake_birthday,
-        #     status=fake_status,
-        # )
-        # db.session.add(hocsinh)
-
-
-
-        db.session.commit()
+#
+#     op.execute("""
+#     CREATE TRIGGER check_score_insert
+#     BEFORE INSERT ON score
+#     FOR EACH ROW
+#     BEGIN
+#         DECLARE score_count INT;
+#
+#         -- Kiểm tra điểm 15 phút
+#         IF NEW.score_type = 'FIFTEEN_MINUTE' THEN
+#             SELECT COUNT(*) INTO score_count
+#             FROM score
+#             WHERE student_info_id = NEW.student_info_id
+#               AND transcript_id = NEW.transcript_id
+#               AND score_type = 'FIFTEEN_MINUTE';
+#
+#             IF score_count >= 5 THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Student already has maximum fifteen-minute score number.';
+#             END IF;
+#         END IF;
+#
+#         -- Kiểm tra điểm 1 tiết
+#         IF NEW.score_type = 'ONE_PERIOD' THEN
+#             SELECT COUNT(*) INTO score_count
+#             FROM score
+#             WHERE student_info_id = NEW.student_info_id
+#               AND transcript_id = NEW.transcript_id
+#               AND score_type = 'ONE_PERIOD';
+#
+#             IF score_count >= 3 THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Student already has maximum one-period score number.';
+#             END IF;
+#         END IF;
+#
+#         -- Kiểm tra điểm thi
+#         IF NEW.score_type = 'EXAM' THEN
+#             SELECT COUNT(*) INTO score_count
+#             FROM score
+#             WHERE student_info_id = NEW.student_info_id
+#               AND transcript_id = NEW.transcript_id
+#               AND score_type = 'EXAM';
+#
+#             IF score_count >= 1 THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Student can only have 1 exam score.';
+#             END IF;
+#         END IF;
+#
+#     END;
+#     """)
+#
+#
+#     op.execute("""
+#     CREATE TRIGGER check_score_delete
+#     BEFORE DELETE ON score
+#     FOR EACH ROW
+#     BEGIN
+#         DECLARE score_count INT;
+#
+#         -- Kiểm tra điểm 15 phút
+#         IF OLD.score_type = 'FIFTEEN_MINUTE' THEN
+#             SELECT COUNT(*) INTO score_count
+#             FROM score
+#             WHERE student_info_id = OLD.student_info_id
+#               AND transcript_id = OLD.transcript_id
+#               AND score_type = 'FIFTEEN_MINUTE';
+#
+#             IF score_count <= 1 THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Student cannot have less than 1 fifteen-minute score.';
+#             END IF;
+#         END IF;
+#
+#         -- Kiểm tra điểm 1 tiết
+#         IF OLD.score_type = 'ONE_PERIOD' THEN
+#             SELECT COUNT(*) INTO score_count
+#             FROM score
+#             WHERE student_info_id = OLD.student_info_id
+#               AND transcript_id = OLD.transcript_id
+#               AND score_type = 'ONE_PERIOD';
+#
+#             IF score_count <= 1 THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Cannot delete: Student has less than 1 one-period score left.';
+#             END IF;
+#         END IF;
+#
+#         -- Kiểm tra điểm thi
+#         IF OLD.score_type = 'EXAM' THEN
+#             SELECT COUNT(*) INTO score_count
+#             FROM score
+#             WHERE student_info_id = OLD.student_info_id
+#               AND transcript_id = OLD.transcript_id
+#               AND score_type = 'EXAM';
+#
+#             IF score_count <= 1 THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Student must have at least 1 exam score.';
+#             END IF;
+#         END IF;
+#
+#     END;
+#     """)
+#
+#     op.execute("""
+#     CREATE TRIGGER check_student_age
+#     BEFORE INSERT ON student_info
+#     FOR EACH ROW
+#     BEGIN
+#         DECLARE min_age INT;
+#         DECLARE max_age INT;
+#         DECLARE student_age INT;
+#
+#         -- Lấy giới hạn độ tuổi từ bảng Rule (id = 1)
+#         SELECT min_value, max_value INTO min_age, max_age
+#         FROM rule
+#         WHERE id = 1;
+#
+#         -- Kiểm tra nếu không có quy định về độ tuổi, mặc định từ 0 đến 100
+#         IF min_age IS NULL OR max_age IS NULL THEN
+#             SET min_age = 15;
+#             SET max_age = 20;
+#         END IF;
+#
+#         -- Tính toán tuổi học sinh từ ngày sinh
+#         SET student_age = TIMESTAMPDIFF(YEAR, NEW.birthday, CURDATE());
+#
+#         -- Kiểm tra xem tuổi học sinh có nằm trong giới hạn không
+#         IF student_age < min_age OR student_age > max_age THEN
+#             SIGNAL SQLSTATE '45000'
+#             SET MESSAGE_TEXT = 'Student age is not appropriate.';
+#         END IF;
+#     END;
+#     """)
+#
+#
+# def downgrade():
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_grade_insert;
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_grade_delete;
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_max_student;
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS update_student_number_after_delete;
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_semester_delete;
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_min_classroom
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_score_delete
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_score_insert
+#     """)
+#
+#     op.execute("""
+#     DROP TRIGGER IF EXISTS check_student_age
+#     """)
