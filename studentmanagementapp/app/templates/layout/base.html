@@ -8,23 +8,36 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
-    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
 </head>
 <body>
+
 
 {% block header %}
 {% include 'layout/header.html' %}
 {% endblock %}
 
-<main class="container">
-    {% block content required %}
+
+<div class="wrapper">
+
+    {% block sidebar %}
+    {% include 'layout/sidebar.html' %}
     {% endblock %}
-</main>
+
+
+    <main class="container">
+        {% block content required %}
+        {% endblock %}
+    </main>
+
+</div>
+
 
 {% block footer %}
 {% include 'layout/footer.html' %}
 {% endblock %}
+
 
 </body>
 </html>

@@ -40,41 +40,38 @@ class RuleView(ModelView):
 
 
 class CurriculumView(ModelView):
-    column_list = ['curriculum_name', 'subject', 'grade', 'grade.school_year']
-    column_searchable_list = ['curriculum_name']
+    column_list = ['subject', 'grade', 'grade.school_year']
     column_labels = {'grade.school_year': 'School Year'}
 
 
-class ScoreInlineForm(InlineFormAdmin):
-    form_overrides = {
-        'score_number': DecimalField
-    }
-    form_args = {
-        'score_number': {
-            'label': 'Điểm',
-            'validators': [
-                validators.NumberRange(min=0, max=10, message='Điểm phải từ 0 đến 10')
-            ],
-            'widget': NumberInput(min=0, max=10, step=0.1)
-        }
-    }
-    form_columns = ['score_number', 'score_type', 'student_info']
-    form_labels = {
-        'score_number': 'Điểm',
-        'score_type': 'Loại điểm',
-        'student_info': 'Học sinh'
-    }
+# class ScoreInlineForm(InlineFormAdmin):
+#     form_overrides = {
+#         'score_number': DecimalField
+#     }
+#     form_args = {
+#         'score_number': {
+#             'label': 'Điểm',
+#             'validators': [
+#                 validators.NumberRange(min=0, max=10, message='Điểm phải từ 0 đến 10')
+#             ],
+#             'widget': NumberInput(min=0, max=10, step=0.1)
+#         }
+#     }
+#     form_columns = ['score_number', 'score_type', 'student_info']
+#     form_labels = {
+#         'score_number': 'Điểm',
+#         'score_type': 'Loại điểm',
+#         'student_info': 'Học sinh'
+#     }
 
 
 class TranscriptView(ModelView):
-    inline_models = [ScoreInlineForm(Score)] # Tạo instance của ScoreInlineForm và truyền vào
-    column_labels = {
-        'classroom': 'Lớp',
-        'curriculum': 'Chương trình',
-        'semester': 'Học kỳ',
-        'teacher_info': 'Giáo viên'
-    }
-    form_excluded_columns = ('scores',)
+    # inline_models = [ScoreInlineForm(Score)] # Tạo instance của ScoreInlineForm và truyền vào
+    # column_labels = {
+    #     'teacher_info': 'Teacher'
+    # }
+    # form_excluded_columns = ('scores',)
+    column_list = ['transcript_name']
 
 
 

@@ -1,15 +1,105 @@
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+::after,
+::before {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
+
+li {
+    list-style: none;
+}
+
+h1 {
+    font-weight: 600;
+    font-size: 1.5rem;
+}
+
 body {
-    background-color: white;
-    color: darkblue;
+    font-family: 'Poppins', sans-serif;
+}
+
+.wrapper {
+    display: flex;
+}
+
+.container {
     min-height: 100vh;
+    width: 100%;
+    overflow: hidden;
+    transition: all 0.35s ease-in-out;
+    background-color: #eef0f3;
+}
+
+#sidebar {
+    width: 70px;
+    min-width: 70px;
+    z-index: 1000;
+    transition: all .25s ease-in-out;
+    background-color: #2a3449;
     display: flex;
     flex-direction: column;
 }
-main {
-    flex: 1;
+
+#sidebar.expand {
+    width: 260px;
+    min-width: 260px;
 }
+
+.toggle-btn {
+    background-color: transparent;
+    cursor: pointer;
+    border: 0;
+    padding: 1rem 1.5rem;
+}
+
+.toggle-btn i {
+    font-size: 1.5rem;
+    color: #FFF;
+}
+
+.sidebar-logo {
+    margin: auto 0;
+    color: #FFF;
+    font-size: 1.15rem;
+    font-weight: 600;
+    padding: 1rem 1rem;
+}
+
+
+#sidebar:not(.expand) .sidebar-logo,
+#sidebar:not(.expand) .sidebar-btn,
+#sidebar:not(.expand) select,
+#sidebar:not(.expand) label.sidebar-label span {
+    display: none;
+}
+
+.sidebar-nav {
+    padding: 2rem 0;
+    flex: 1 1 auto;
+}
+
+label.sidebar-label {
+    padding: .125rem 1.825rem;
+    color: #FFF;
+    display: block;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    border-left: 3px solid transparent;
+    margin-top: 1.625rem
+}
+
+
+select.form-select {
+    font-size: 0.8rem;
+    margin-left: 2.125rem
+}
+
+
+.sidebar-item {
+    position: relative;
+}
+

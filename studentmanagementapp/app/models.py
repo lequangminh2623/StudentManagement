@@ -68,6 +68,7 @@ class UserInfo(db.Model):
     def user_id(cls):
         return Column(Integer, ForeignKey(User.id, ondelete='SET NULL'), unique=True)
 
+
     def __str__(self):
         return self.name
 
@@ -172,7 +173,7 @@ class ApplicationForm(db.Model):
 class StudentInfo(UserInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
     application_form_id = Column(Integer, ForeignKey(ApplicationForm.id, ondelete='SET NULL'), unique=True)
-    application_form = relationship(ApplicationForm, backref='student_info', lazy=True)
+    application_form = relationship(ApplicationForm, lazy=True)
     user = relationship("User", backref="student_info", lazy=True)
 
 
@@ -186,7 +187,6 @@ class Subject(db.Model):
 
 class Curriculum(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    curriculum_name = Column(String(50), nullable=False)
     grade_id = Column(Integer, ForeignKey(Grade.id, ondelete='CASCADE'), nullable=False)
     grade = relationship(Grade, backref='curriculums', lazy=True)
     subject_id = Column(Integer, ForeignKey(Subject.id, ondelete='CASCADE'), nullable=False)
@@ -197,45 +197,11 @@ class Curriculum(db.Model):
     )
 
     def __str__(self):
-        return self.curriculum_name
-
-
-class Report(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    report_name = Column(String(50), nullable=False)
-    subject_id = Column(Integer, ForeignKey(Subject.id, ondelete='CASCADE'), nullable=False)
-    subject = relationship(Subject, backref='reports', lazy=True)
-    semester_id = Column(Integer, ForeignKey(Semester.id, ondelete='CASCADE'), nullable=False)
-    semester = relationship(Semester, backref='reports', lazy=True)
-
-    __table_args__ = (
-        UniqueConstraint('subject_id', 'semester_id', name='uq_subjectid_semesterid'),
-    )
-
-    def __str__(self):
-        return self.report_name
-
-
-class Statistic(db.Model):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    pass_count = Column(Integer, nullable=False)
-    pass_rate = Column(Float, nullable=False)
-    classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='CASCADE'), nullable=False)
-    classroom = relationship(Classroom, backref='statistics', lazy=True)
-    report_id = Column(Integer, ForeignKey(Report.id, ondelete='CASCADE'), nullable=False)
-    report = relationship(Report, backref='statistics', lazy=False)
-
-    __table_args__ = (
-        UniqueConstraint('classroom_id', 'report_id', name='uq_classroomid_reportid'),
-    )
-
-    def __str__(self):
-        return self.id
+        return f'{str(self.subject)}-{str(self.grade)}-{str(self.grade.school_year)}'
 
 
 class Transcript(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    transcript_name = Column(String(50), nullable=False)
     is_done = Column(Boolean, nullable=False, default=False)
     classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='CASCADE'), nullable=False)
     classroom = relationship(Classroom, backref='transcripts', lazy=True)
@@ -251,7 +217,7 @@ class Transcript(db.Model):
     )
 
     def __str__(self):
-        return self.transcript_name
+        return f'{str(self.classroom)}-{str(self.curriculum)}-{str(self.semester)}'
 
 
 class ScoreType(Enumerate):
@@ -272,7 +238,7 @@ class Score(db.Model):
     transcript = relationship("Transcript", backref="scores", lazy=True)
 
     def __str__(self):
-        return self.score_type.name
+        return f'{str(self.student_info)}-{self.score_type.name}'
 
 
 class ClassroomTransfer(db.Model):
@@ -290,7 +256,7 @@ class ClassroomTransfer(db.Model):
     )
 
     def __str__(self):
-        return self.id
+        return f'{str(self.classroom)}-{str(self.student_info)}'
 
 
 class Rule(db.Model):
@@ -353,7 +319,7 @@ if __name__ == "__main__":
 #         -- Lấy số lượng học sinh hiện tại trong lớp
 #         SELECT student_number INTO student_count
 #         FROM classroom
-#         WHERE classroom_id = NEW.classroom_id;
+#         WHERE id = NEW.classroom_id;
 #
 #         -- Lấy giới hạn học sinh của lớp từ bảng LopHoc
 #         SELECT max_value INTO max_count
@@ -470,7 +436,6 @@ if __name__ == "__main__":
 #     END;
 #     """)
 #
-#
 #     op.execute("""
 #     CREATE TRIGGER check_score_delete
 #     BEFORE DELETE ON score
@@ -554,40 +519,147 @@ if __name__ == "__main__":
 #     END;
 #     """)
 #
+#     op.execute("""
+#         CREATE TRIGGER check_max_student_update
+#         BEFORE UPDATE ON classroom_transfer
+#         FOR EACH ROW
+#         BEGIN
+#             DECLARE student_count INT;
+#             DECLARE max_count INT;
+#             DECLARE old_classroom_id INT;
+#
+#             -- Lấy số lượng học sinh hiện tại trong lớp mới
+#             SELECT student_number INTO student_count
+#             FROM classroom
+#             WHERE id = NEW.classroom_id;
+#
+#             -- Lấy giới hạn học sinh của lớp từ bảng Rule
+#             SELECT max_value INTO max_count
+#             FROM rule
+#             WHERE id = 4;
+#
+#             -- Nếu không có giới hạn, mặc định là 40
+#             IF max_count IS NULL THEN
+#                 SET max_count = 40;
+#             END IF;
+#
+#             -- Kiểm tra nếu lớp đã đủ số học sinh theo giới hạn
+#             IF student_count >= max_count AND NEW.classroom_id != OLD.classroom_id THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Classroom reached max student number.';
+#             END IF;
+#
+#             -- Giảm số lượng học sinh ở lớp cũ
+#             IF NEW.classroom_id != OLD.classroom_id THEN
+#                 UPDATE classroom
+#                 SET student_number = student_number - 1
+#                 WHERE id = OLD.classroom_id;
+#             END IF;
+#
+#             -- Tăng số lượng học sinh ở lớp mới
+#             IF NEW.classroom_id != OLD.classroom_id THEN
+#                 UPDATE classroom
+#                 SET student_number = student_number + 1
+#                 WHERE id = NEW.classroom_id;
+#             END IF;
+#
+#         END;
+#         """)
+#
+#     op.execute("""
+#         CREATE TRIGGER check_score_update
+#         BEFORE UPDATE ON score
+#         FOR EACH ROW
+#         BEGIN
+#             DECLARE score_count INT;
+#
+#             -- Kiểm tra điểm 15 phút
+#             IF NEW.score_type = 'FIFTEEN_MINUTE' THEN
+#                 SELECT COUNT(*) INTO score_count
+#                 FROM score
+#                 WHERE student_info_id = NEW.student_info_id
+#                   AND transcript_id = NEW.transcript_id
+#                   AND score_type = 'FIFTEEN_MINUTE';
+#
+#                 IF score_count > 5 THEN
+#                     SIGNAL SQLSTATE '45000'
+#                     SET MESSAGE_TEXT = 'Student already has maximum fifteen-minute score number.';
+#                 END IF;
+#             END IF;
+#
+#             -- Kiểm tra điểm 1 tiết
+#             IF NEW.score_type = 'ONE_PERIOD' THEN
+#                 SELECT COUNT(*) INTO score_count
+#                 FROM score
+#                 WHERE student_info_id = NEW.student_info_id
+#                   AND transcript_id = NEW.transcript_id
+#                   AND score_type = 'ONE_PERIOD';
+#
+#                 IF score_count > 3 THEN
+#                     SIGNAL SQLSTATE '45000'
+#                     SET MESSAGE_TEXT = 'Student already has maximum one-period score number.';
+#                 END IF;
+#             END IF;
+#
+#             -- Kiểm tra điểm thi
+#             IF NEW.score_type = 'EXAM' THEN
+#                 SELECT COUNT(*) INTO score_count
+#                 FROM score
+#                 WHERE student_info_id = NEW.student_info_id
+#                   AND transcript_id = NEW.transcript_id
+#                   AND score_type = 'EXAM';
+#
+#                 IF score_count > 1 THEN
+#                     SIGNAL SQLSTATE '45000'
+#                     SET MESSAGE_TEXT = 'Student can only have 1 exam score.';
+#                 END IF;
+#             END IF;
+#
+#         END;
+#         """)
+#
+#     op.execute("""
+#         CREATE TRIGGER check_student_age_update
+#         BEFORE UPDATE ON student_info
+#         FOR EACH ROW
+#         BEGIN
+#             DECLARE min_age INT;
+#             DECLARE max_age INT;
+#             DECLARE student_age INT;
+#
+#             -- Lấy giới hạn độ tuổi từ bảng Rule (id = 1)
+#             SELECT min_value, max_value INTO min_age, max_age
+#             FROM rule
+#             WHERE id = 1;
+#
+#             -- Kiểm tra nếu không có quy định về độ tuổi, mặc định từ 15 đến 20
+#             IF min_age IS NULL OR max_age IS NULL THEN
+#                 SET min_age = 15;
+#                 SET max_age = 20;
+#             END IF;
+#
+#             -- Tính toán tuổi học sinh từ ngày sinh
+#             SET student_age = TIMESTAMPDIFF(YEAR, NEW.birthday, CURDATE());
+#
+#             -- Kiểm tra xem tuổi học sinh có nằm trong giới hạn không
+#             IF student_age < min_age OR student_age > max_age THEN
+#                 SIGNAL SQLSTATE '45000'
+#                 SET MESSAGE_TEXT = 'Student age is not appropriate.';
+#             END IF;
+#         END;
+#         """)
+#
 #
 # def downgrade():
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_grade_insert;
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_grade_delete;
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_max_student;
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS update_student_number_after_delete;
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_semester_delete;
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_min_classroom
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_score_delete
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_score_insert
-#     """)
-#
-#     op.execute("""
-#     DROP TRIGGER IF EXISTS check_student_age
-#     """)
+#     op.execute("""DROP TRIGGER IF EXISTS check_grade_insert;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_grade_delete;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_max_student;""")
+#     op.execute("""DROP TRIGGER IF EXISTS update_student_number_after_delete;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_semester_delete;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_min_classroom;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_score_delete;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_score_insert;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_student_age;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_max_student_update;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_score_update;""")
+#     op.execute("""DROP TRIGGER IF EXISTS check_student_age_update;""")

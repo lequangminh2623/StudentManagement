@@ -87,7 +87,7 @@ def generate_data():
         classrooms = []
         for grade in grades:
             for i in range(1, 3):  # 3 lớp mỗi khối
-                classroom_name = f"{grade.grade_type.name}A{i}"
+                classroom_name = f"{grade.grade_type.value}A{i}"
                 classroom = Classroom(
                     classroom_name=classroom_name,
                     grade_id=grade.id
@@ -156,9 +156,7 @@ def generate_data():
         # Tạo chương trình học cho mỗi khối và môn học
         for grade in grades:
             for subject in subject_list:
-                curriculum_name = f"{grade.grade_type.name.replace('GRADE_', 'Grade ')} - {subject.subject_name}"
                 curriculum = Curriculum(
-                    curriculum_name=curriculum_name,
                     grade_id=grade.id,
                     subject_id=subject.id
                 )
@@ -254,7 +252,6 @@ def generate_data():
                 for semester in semesters:
                     teacher = random.choice(teachers)
                     transcript = Transcript(
-                        transcript_name=f"{classroom.classroom_name} - {curriculum.subject.subject_name} - {semester.semester_type.name}",
                         classroom_id=classroom.id,
                         curriculum_id=curriculum.id,
                         semester_id=semester.id,

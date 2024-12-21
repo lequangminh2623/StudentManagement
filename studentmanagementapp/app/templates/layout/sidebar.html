@@ -1,0 +1,27 @@
+<aside id="sidebar" class="expand">
+    <div class="d-flex">
+        <button class="toggle-btn" type="button">
+            <i class="lni lni-grid-alt"></i>
+            <span class="sidebar-logo">Select Menu</span>
+        </button>
+    </div>
+    <ul class="sidebar-nav">
+        {% for filter in filters %}
+        <li class="sidebar-item">
+            <label for="{{ filter.id }}" class="sidebar-label">
+                <span>{{ filter.name }}</span>
+            </label>
+            <select id="{{ filter.id }}" class="form-select w-auto">
+                {% for item in filter.data %}
+                <option>{{ item }}</option>
+                {% endfor %}
+            </select>
+        </li>
+        {% endfor %}
+    </ul>
+    <p class="text-end">
+        <button class="btn btn-outline-danger m-3 sidebar-btn">Select</button>
+    </p>
+</aside>
+<link rel="stylesheet" href="static/css/style.css">
+<script src="static/script/script.js"></script>
