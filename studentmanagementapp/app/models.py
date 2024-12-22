@@ -30,7 +30,7 @@ class User(db.Model, UserMixin):
 
 class Gender(Enumerate):
     MALE = 1
-    FEMALE = 2
+    FEMALE = 0
 
 
 class UserInfo(db.Model):
@@ -116,9 +116,9 @@ class Semester(db.Model):
 
 
 class GradeType(Enumerate):
-    GRADE_10 = 1
-    GRADE_11 = 2
-    GRADE_12 = 3
+    GRADE_10 = 10
+    GRADE_11 = 11
+    GRADE_12 = 12
 
 
 class Grade(db.Model):
