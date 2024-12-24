@@ -8,7 +8,7 @@ from app.models import *
 
 @app.route("/")
 def index():
-    return render_template('login.html')
+    return render_template('index.html')
 
 
 @login.user_loader
@@ -45,7 +45,6 @@ def login_process():
 
     return render_template('login.html')
 
-
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -58,7 +57,7 @@ def dashboard():
 def logout():
     logout_user()
     session.clear()
-    return redirect(url_for('login'))
+    return redirect(url_for('login_process'))
 
 # Phân quyền
 @app.route('/teacher')

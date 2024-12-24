@@ -55,9 +55,6 @@ class ClassroomView(AdminView):
 class SubjectView(AdminView):
     column_list = ['subject_name', '']
 
-
-
-
 admin.add_view(ClassroomView(Classroom, db.session))
 admin.add_view(ApplicationView(ApplicationForm, db.session))
 admin.add_view(CurriculumView(Curriculum, db.session))
