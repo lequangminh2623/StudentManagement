@@ -27,6 +27,7 @@ body {
 .container {
     min-height: 100vh;
     width: 100%;
+    padding: 0px !important;
     overflow: hidden;
     transition: all 0.35s ease-in-out;
     background-color: #eef0f3;
@@ -159,13 +160,6 @@ body {
     margin-bottom: 10px;
 }
 
-
-.container {
-    width: 100%;
-    min-height: 67vh;
-    padding-top: 30px;
-    padding-bottom: 40px;
-}
 
 .info {
     font-weight: bold;

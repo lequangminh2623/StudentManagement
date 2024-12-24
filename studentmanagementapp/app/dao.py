@@ -4,7 +4,7 @@ from app import app
 import hashlib
 
 def check_user(username, password):
-    password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
+    #password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
 
     return User.query.filter(User.username.__eq__(username),
                               User.password.__eq__(password)).first()

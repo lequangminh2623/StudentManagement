@@ -1,6 +1,15 @@
 {% extends 'layout/base.html' %}
 
+{% block sidebar %}
+{% endblock %}
 
 {% block content %}
-
+<div class="welcome">
+  <div class="welcome-text">
+    <img width="350px" src="{{ url_for('static', filename='images/logo-white.png') }}">
+    <h4>Chào mừng đến với</h4>
+    <h1>Trường Trung học phổ thông OU</h1>
+    <h2>OU High School</h2>
+  </div>
+</div>
 {% endblock %}
