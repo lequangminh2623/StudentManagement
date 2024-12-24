@@ -7,6 +7,7 @@ from app import db, app, migrate
 from enum import Enum as Enumerate
 from flask_login import UserMixin
 from datetime import date
+from sqlalchemy.types import Enum as SQLAEnum
 
 
 class Role(Enumerate):
@@ -23,6 +24,7 @@ class User(db.Model, UserMixin):
     avatar = Column(String(255),
                     default='https://res.cloudinary.com/dqw4mc8dg/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1733391370/aj6sc6isvelwkotlo1vw.png')
     role = Column(Enum(Role), default=Role.STUDENT)
+
 
     def __str__(self):
         return self.username
