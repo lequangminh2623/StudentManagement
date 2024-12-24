@@ -102,6 +102,7 @@ select.form-select {
 }
 
 .logout-btn {
+    margin-top: 10px !important;
     background-color: #f44336;
     color: white;
     padding: 10px 15px;
@@ -113,6 +114,629 @@ select.form-select {
     background-color: #d32f2f;
 }
 
+.my-3 {
+    margin: 0px !important;
+}
+
+.navbar-nav.ml-auto {
+        margin-left: auto !important;
+    padding: 5px;
+    }
+
+.container, .container-lg, .container-md, .container-sm, .container-xl
+{
+    min-width: 100% !important;
+}
+
+body > nav > ul > li:nth-child(2)
+{
+    margin-top: 5px;
+}
+
+body {
+    background-color: #F1FAFF;
+    background-repeat: no-repeat;
+    background-size: cover;
+    width: 100%;
+    min-height:500px!important;
+    overflow-x: hidden;
+}
+
+.overlay{
+    opacity:1;
+    background-color:#a3e3e2;
+    position:fixed;
+    width:72.3%;
+    height:100%;
+    top:0px;
+    left:13.85%;
+    z-index:-1000;
+}
+
+.flex {
+    display:flex;
+    flex-wrap: nowrap;
+    margin-bottom: 10px;
+}
+
+.footer {
+    clear: both;
+    position: relative;
+    margin-top: 5rem!important;
+    margin-bottom: 0!important;
+}
+
+.container {
+    width: 100%;
+    min-height: 67vh;
+    padding-top: 30px;
+    padding-bottom: 40px;
+}
+
+.info {
+    font-weight: bold;
+}
+
+.form-login {
+    box-shadow: 0px 2px 20px rgb(0 0 0 / 8%);
+    padding: 30px;
+    border-radius: 20px;
+    background-color: #fff;
+}
+/*table.student tr {
+    counter-increment: rowNumber;
+}
+
+table.student tr td:first-child::before {
+    content: counter(rowNumber);
+    width: 1em;
+}*/
+.col60 {
+    width: 60%;
+}
+
+.align-center {
+    margin: 0 auto;
+}
+
+.navbar {
+    padding-bottom: 0;
+}
+
+.navbar-collapse .navbar-nav>li>a {
+    text-transform: uppercase;
+    font-size: 15px;
+    padding: 15px 0;
+    border-bottom: 3px solid transparent;
+}
+
+.navbar-collapse .navbar-nav>li.main>a {
+    margin: 0 8px;
+}
+
+.navbar-collapse .navbar-nav>li.active>a {
+    font-weight: bold;
+}
+
+.navbar-collapse .navbar-nav li.active>a {
+    border-bottom-color: white;
+}
+
+/*******************************--Sidebar--*********************************/
+#sidebar-wrapper {
+    min-height: 100vh;
+    margin-left: -15rem;
+    -webkit-transition: margin .25s ease-out;
+    -moz-transition: margin .25s ease-out;
+    -o-transition: margin .25s ease-out;
+    transition: margin .25s ease-out;
+    z-index: 1000;
+}
+
+#sidebar-wrapper .sidebar-heading {
+    padding: 0.875rem 1.25rem;
+    font-size: 1.2rem;
+}
+
+#sidebar-wrapper .list-group {
+    width: 17vw;
+}
+
+#page-content-wrapper {
+    min-width: 67vw;
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+}
+
+@media (min-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+
+    #page-content-wrapper {
+        min-width: 0;
+        width: 100%;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -15rem;
+    }
+}
+
+.col60 {
+    width: 60%;
+}
+
+.align-center {
+    margin: 0 auto;
+}
+
+.navbar-collapse .navbar-nav>li>a {
+    text-transform: uppercase;
+    font-size: 15px;
+    padding: 15px 0;
+}
+
+.navbar-collapse .navbar-nav>li.main>a {
+    margin: 0 8px;
+}
+
+.navbar-collapse .navbar-nav>li.active>a {
+    font-weight: bold;
+}
+
+
+.bg-lightgray {
+    background-color: #e8eded;
+}
+
+i {
+    padding-right: 5px;
+}
+
+table.student_marks tbody tr td {
+    width: 7%;
+}
+
+table.student_marks th,td {
+    white-space: nowrap;
+    min-width: 3vw;
+}
+
+td.name {
+    min-width:18vw;
+}
+
+.high-div {
+    min-height: 67vh;
+}
+
+h3.bg-lightgray {
+    margin:10px 0;
+    padding: 5px;
+}
+
+h4.bg-lightgray {
+    margin:10px 0;
+    padding: 5px;
+}
+
+.sidebar-item {
+    margin: 15px 5px;
+}
+
+div.main-body {
+    min-height: 87vh!important;
+}
+
+/* hover effect cho cac dropdown-item trang chinh */
+div.dropdown-menu a:hover {
+    background-color: lightblue;
+}
+
+.dropdown-menu.show {
+    width: max-content
+}
+
+/* hover effect cho cac dropdown-item trang admin */
+a.dropdown-item:hover {
+    background-color: lightblue;
+}
+
+.form-login {
+    width: 80%;
+    margin: 80px auto;
+}
+
+/********************************* Trang chu *******************************/
+
+div {
+  display: block;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.welcome {
+  background: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)),url("../images/bg.jpg");
+  height: 120vh;
+  width: 100%;
+  -webkit-background-size: cover;
+  background-size: cover;
+  background-position: center center;
+  position: relative;
+}
+
+.welcome-text {
+  position: absolute;
+  width: 90%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.welcome-text img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -130%);
+}
+
+.welcome-text h1,h2,h4 {
+  text-align: center;
+  color: #fff;
+}
+
+.welcome-text h1 {
+  text-transform: uppercase;
+  font-size: 30px;
+}
+
+@media (max-width: 700px) {
+    .welcome-text h1 {
+        font-size: 15px;
+
+    }
+
+    .welcome-text h2,h4 {
+        font-size: 10px;
+    }
+
+    .welcome-text img {
+        width:100px;
+        top: 30%;
+    }
+}
+
+.welcome-text h2 {
+  color: gray;
+}
+
+.gioithieu {
+  padding: 80px 40px;
+}
+
+.content-home h1.heading {
+  color: #10375C;
+  font-weight: 700;
+  margin-top: 0;
+}
+
+p.note {
+    font-size: 18px;
+    line-height: 1.2;
+    color: #626D78;
+    margin-bottom: 50px;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 900px;
+}
+
+.row {
+    margin-right: -10px;
+    margin-left: -10px;
+}
+
+.mb-20 {
+    margin-bottom: 20px !important;
+}
+
+.highlight-item {
+    box-shadow: 0px 2px 20px rgb(0 0 0 / 8%);
+    border-radius: 20px;
+    padding: 35px 24px;
+    cursor: pointer;
+    background: #FFFFFF;
+}
+
+.highlight-item:hover .highlight-detail{
+    display: block;
+    animation: showDetail ease 0.4s;
+}
+
+img {
+  max-width: 100%;
+  vertical-align: middle;
+  border: 0;
+}
+
+.title-highlight {
+    font-size: 20px;
+    font-weight: 700;
+    margin-top: 40px;
+    color: #10375C;
+}
+
+.highlight-detail {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 0;
+    border-radius: 20px;
+    padding: 35px 24px;
+    color: #fff;
+    display: none;
+    height: 100%;
+    background-color: #1998E2 !important;
+}
+
+.highlight-detail .title-highlight{
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+@keyframes showDetail {
+  from{
+  opacity: 0;
+  height: 0;
+  }
+  to{
+  opacity: 1;
+  height: 100%;
+  }
+}
+
+.feedback {
+    margin-bottom: 50px;
+    padding: 60px 35px;
+}
+
+.feedback h1.heading {
+    font-weight: bold;
+    color: #10375C;
+}
+
+.list-feedback-slide .item-block {
+    background: #FFFFFF;
+    box-shadow: 0px 4px 10px rgb(0 0 0 / 10%);
+    border-radius: 15px;
+    padding: 40px;
+    min-height: 250px;
+    margin: 10px 10px;
+}
+
+ .owl-carousel .item {
+     cursor: pointer;
+     overflow: hidden;
+     position: relative;
+ }
+
+ .owl-carousel {
+     margin-bottom: 15px
+ }
+
+.feedback-text {
+    font-size: 18px;
+    line-height: 28px;
+}
+
+.list-feedback-slide .post-name {
+    font-weight: bold;
+    font-size: 20px;
+    line-height: 24px;
+    margin-top: 0;
+}
+
+.list-feedback-slide .post {
+    font-size: 13px;
+    color: #888888;
+}
+
+.list-feedback-slide .item-block-top {
+    display: flex;
+    justify-content: space-between;
+}
+
+.owl-carousel .owl-nav {
+    display: none;
+}
+
+/**********************************Trang chu admin***************************************/
+
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600&display=swap');
+
+@media (min-width: 992px) {
+  .col-lg-12 {
+      -ms-flex: 0 0 100%;
+      flex: 0 0 100%;
+      max-width: 100%;
+  }
+}
+
+*, ::after, ::before {
+    box-sizing: border-box;
+}
+
+.row {
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+.col-12 {
+    -ms-flex: 0 0 100%;
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+.single_element .quick_activity_wrap {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-gap: 30px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 575.98px) {
+  .single_element .quick_activity_wrap {
+    grid-template-columns: repeat(1, 1fr);
+    grid-gap: 15px;
+    margin-bottom: 30px;
+  }
+}
+
+@media only screen and (min-width: 576px) and (max-width: 767px) {
+  .single_element .quick_activity_wrap {
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 15px;
+    margin-bottom: 30px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .single_element .quick_activity_wrap {
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 15px;
+    margin-bottom: 30px;
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .single_element .quick_activity_wrap {
+    grid-template-columns: repeat(2, 1fr);
+    margin-bottom: 30px;
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1500px) {
+  .single_element .quick_activity_wrap {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.single_element .single_quick_activity {
+    background-color: #fff;
+    border-radius: 10px;
+    -webkit-transition: 0.5s;
+    transition: 0.5s;
+    padding: 43px 30px;
+    position: relative;
+    align-items: center;
+    justify-content: center;
+}
+
+.single_element .single_quick_activity .icon {
+    width: 100px;
+    height: 100px;
+    flex-basis: 80px;
+    text-align: right;
+}
+
+.d-flex {
+    display: -ms-flexbox!important;
+    display: flex!important;
+}
+
+.single_element .single_quick_activity .count_content {
+    margin-left: 30px;
+    flex-basis: 50%;
+    text-align: left;
+}
+
+.single_element .single_quick_activity h3 {
+  margin-bottom: 0px;
+}
+
+.single_element .single_quick_activity h3 span {
+    font-size: 45px;
+    margin-bottom: 0px;
+    font-weight: 600;
+    -webkit-transition: 0.5s;
+    transition: 0.5s;
+    color: #2E4765;
+    font-family: "Rajdhani", sans-serif;
+    line-height: 1;
+}
+
+.single_element .single_quick_activity p {
+    -webkit-transition: 0.5s;
+    transition: 0.5s;
+    font-size: 19px;
+    font-weight: 500;
+    color: #B2B5C0;
+    font-family: "Rajdhani", sans-serif;
+    line-height: 1;
+}
+
+.single_element .single_quick_activity::before {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    -webkit-transition: 0.5s;
+    transition: 0.5s;
+}
+
+.single_quick_activity {
+    box-shadow: 0px 2px 20px rgb(0 0 0 / 10%);
+}
+/***********************************************/
+
+/**********************Overlay fixed alert********************/
+
+div.overlay-alert {
+    position: fixed;
+    right: 5px;
+    bottom: 5px;
+    z-index: 1000;
+    min-width: 200px;
+    height: 50px;
+    opacity: 1;
+    font-weight: bold;
+    padding: .75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+}
+
+.shadow-box {
+    box-shadow: 0 0 5px #0fe0f7;
+}
+
+div.overlay-alert-danger {
+    color: #f8f9fa;
+    background-color: #e85260;
+}
+
+div.overlay-alert-success {
+    color: #f8f9fa;
+    background-color: #28a745;
+}
+
+/************* Column-header admin model view ***************/
+
+th.column-header {
+    color: #007bff;
+    text-decoration: none;
+    background-color: transparent;
+}
+
 /************ Scroll to top ****************/
 .scrollToTop{
     width: 4vw;
@@ -121,7 +745,7 @@ select.form-select {
     background: whiteSmoke;
     font-size: 50px;
     font-weight: bold;
-    background-color: #e8eded ;
+    background-color: #e8eded;
     text-decoration: none;
     position:fixed;
     bottom:5px;
