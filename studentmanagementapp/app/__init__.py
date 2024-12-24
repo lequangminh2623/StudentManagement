@@ -21,9 +21,8 @@ app.config["PAGE_SIZE"] = 5
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-# login = LoginManager(app=app)
-
-
+login = LoginManager(app=app)
+login.login_view = 'login_process'
 
 cloudinary.config(
     cloud_name=os.getenv("CLOUD_NAME"),

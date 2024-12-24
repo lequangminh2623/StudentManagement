@@ -1,5 +1,3 @@
-
-
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 
 ::after,
@@ -101,5 +99,17 @@ select.form-select {
 
 .sidebar-item {
     position: relative;
+}
+
+.logout-btn {
+    background-color: #f44336;
+    color: white;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+.logout-btn:hover {
+    background-color: #d32f2f;
 }
 

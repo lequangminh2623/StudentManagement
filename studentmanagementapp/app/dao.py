@@ -1,22 +1,21 @@
 from sqlalchemy.sql.operators import contains
-
+from app.models import *
 from app import app
 import hashlib
 
-from app.models import *
+def check_user(username, password):
+    #password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
 
+    return User.query.filter(User.username.__eq__(username),
+                              User.password.__eq__(password)).first()
 
-# from models import User
+def get_user_role(role):
+    if isinstance(role, Role):
+        return role.name.lower()
+    return None
 
-
-# def auth_user(username, password):
-#     password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
-#
-#     return User.query.filter(User.username.__eq__(username),
-#                              User.password.__eq__(password)).first()
-
-# def get_user_by_id(id):
-#     return User.query.get(id)
+def get_user_id(user_id):
+    return User.query.filter(User.id.__eq__(user_id)).first()
 
 def get_school_years():
     return SchoolYear.query.all()
