@@ -1,5 +1,4 @@
-from flask import render_template, request, url_for, flash, session
-from werkzeug.utils import redirect
+from flask import render_template, request, url_for, flash, session, redirect
 from app import dao, utils, login
 from app.models import Role
 import math
@@ -37,6 +36,9 @@ def login_process():
 
             user_role = dao.get_user_role(user.role)
 
+            if(user_role == "admin" or user_role == "staff"):
+                return redirect(url_for("admin.index"))
+
             return redirect(url_for(user_role))
         else:
             flash('Tên đăng nhập hoặc mật khẩu không đúng.', 'error')
@@ -51,32 +53,18 @@ def dashboard():
                            username=current_user.username,
                            role=current_user.role.name)
 
-
 @app.route("/logout")
 @login_required
 def logout():
     logout_user()
     session.clear()
-    flash('Đã đăng xuất thành công.', 'success')
-    return redirect(url_for('index'))
-
-
+    return redirect(url_for('login'))
 
 # Phân quyền
-
-
-@app.route('/staff')
-@login_required
-def staff():
-    if current_user.role not in [Role.ADMIN, Role.STAFF]:
-        return "Access denied!", 403
-    return "Welcome to the staff page!"
-
-
 @app.route('/teacher')
 @login_required
 def teacher():
-    if current_user.role not in [Role.ADMIN, Role.TEACHER]:
+    if current_user.role not in [Role.ADMIN, Role.TEACHER, Role.STUDENT]:
         return "Access denied!", 403
     return "Welcome to the teacher page!"
 

@@ -1,3 +1,4 @@
+from wtforms.fields.choices import SelectField
 from app import db, app
 from app.models import Transcript, Classroom, Grade, ApplicationForm, Curriculum, \
     ClassroomTransfer, Subject, StudentInfo, Rule, ApplicationFormStatus, Score
@@ -5,18 +6,25 @@ from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
 from flask_admin import BaseView, expose
 from flask_admin import Admin, AdminIndexView
-from flask import redirect, url_for, flash
+from flask import redirect, url_for, flash, request
 from wtforms.fields import DecimalField
 from wtforms.widgets import NumberInput
 from wtforms import validators
 from flask_admin.model.form import InlineFormAdmin
 from flask_login import current_user
+from app.models import User, Role
 
 admin = Admin(app, name='StudentManagement', template_mode='bootstrap4')
 
-class xacThucView(ModelView):
+class xacThucNguoiDungView(ModelView):
+
     def is_accessible(self):
-        return current_user.is_authenticated and current_user.user_role
+        return current_user.is_authenticated and current_user.role.__eq__(Role.ADMIN)
+
+    def inaccessible_callback(self, name, **kwargs):
+        # Chuyển hướng đến trang đăng nhập nếu không có quyền truy cập
+        return redirect(url_for('login', next=request.url))
+
 
 class ApplicationView(ModelView):
     column_list = ['name', 'gender', 'phone', 'address', 'email', 'birthday', 'status']
@@ -93,8 +101,7 @@ class ClassroomView(ModelView):
     column_searchable_list = ['classroom_name']
 
 
-
-
+admin.add_view(xacThucNguoiDungView(User, db.session))
 admin.add_view(ClassroomView(Classroom, db.session))
 admin.add_view(ApplicationView(ApplicationForm, db.session))
 admin.add_view(CurriculumView(Curriculum, db.session))
