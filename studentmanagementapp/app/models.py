@@ -1,5 +1,4 @@
 import hashlib
-
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, Boolean, Enum, Date, UniqueConstraint, \
     CheckConstraint
 from sqlalchemy.orm import relationship, declared_attr
@@ -7,7 +6,6 @@ from app import db, app, migrate
 from enum import Enum as Enumerate
 from flask_login import UserMixin
 from datetime import date
-from sqlalchemy.types import Enum as SQLAEnum
 
 
 class Role(Enumerate):

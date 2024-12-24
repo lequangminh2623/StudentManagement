@@ -1,48 +1,24 @@
-<script src="{{ url_for('static', filename='js/header_script.js') }}"></script>
-
-<nav class="navbar navbar-expand-lg navbar-dark sticky-top"
-     style="background-color: #091c50;" role="navigation">
-    <a class="navbar-brand flex" href="/" style="margin:0 0;">
-        <img id="logo" src="{{ url_for('static', filename='images/logo-white.png') }}"
-             alt="Logo" style="width:60px;margin:0 15px;">
-    </a>
-    <div class="navbar-nav mr-auto">
-        <a class="nav-link nav-item " id="nav_student-marks"
-           href="{{ url_for('index') }}"
-           style="text-transform: uppercase; font-size: 15px;padding: 15px 0; margin-right: 10px">
-            <i class="fa fa-home"></i>Trang chủ</a>
+<nav class="navbar navbar-expand-sm navbar-dark border-bottom border-1 border-white" style="background-color: #0e2238">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">Dashboard</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mynavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mynavbar">
+            <ul class="navbar-nav me-auto">
+                {% if current_user.role == Role.TEACHER %}
+                <li class="nav-item">
+                    <a class="nav-link nav-item " id="nav_students-marks"
+                       href="\score"
+                       style="text-transform: uppercase; font-size: 15px;padding: 15px 0; margin-right: 10px">Score Input</a>
+                </li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link text-warning text-end" href="/login">Login</a>
+                </li>
+            </ul>
+        </div>
     </div>
-
-    <ul class="navbar-nav ml-auto hi">
-        {% for c in categories %}
-        <li class="nav-item">
-            <a class="nav-link" href="/?category_id={{ c.id }}">{{ c.name }}</a>
-        </li>
-        {% endfor %}
-        <li class="nav-item" style="margin-bottom: 1px">
-            <a class="nav-link text-warning" href="/login">Đăng nhập</a>
-        </li>
-        <li>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </li>
-
-    </ul>
-
-    {% if products %}
-    <form method="get" action="/" class="d-flex">
-        <input class="form-control me-2" type="text" name="kw" placeholder="Tìm sản phẩm">
-        <button class="btn btn-primary" type="submit">Search</button>
-    </form>
-    {% endif %}
 </nav>
-
-<style>
-    a.icon {
-        margin: 3px;
-        width: 50px;
-    }
-
-    .fa-2 {
-        font-size: 25px;
-    }
-</style>
