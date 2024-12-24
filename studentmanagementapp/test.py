@@ -1,3 +1,5 @@
+import hashlib
+
 from app import db, app
 from app.admin import admin
 from app.models import (SchoolYear, Semester, Grade, StudentInfo, ApplicationForm,
@@ -130,6 +132,7 @@ def generate_data():
                 db.session.commit()
                 all_students.append(student)
 
+
                 # Thêm học sinh vào bảng chuyển lớp
                 transfer = ClassroomTransfer(
                     student_info_id=student.id,
@@ -172,7 +175,7 @@ def generate_data():
             # Tạo tài khoản nhân viên
             staff_user = User(
                 username=fake.unique.user_name(),
-                password="123456",  # Mật khẩu mặc định
+                password=str(hashlib.md5("123456".strip().encode('utf-8')).hexdigest()),  # Mật khẩu mặc định
                 role=Role.STAFF,
                 avatar="https://res.cloudinary.com/dqw4mc8dg/image/upload/v1733391370/aj6sc6isvelwkotlo1vw.png"
             )
@@ -197,7 +200,7 @@ def generate_data():
             # Tạo tài khoản giáo viên
             teacher_user = User(
                 username=fake.unique.user_name(),
-                password="123456",  # Mật khẩu mặc định
+                password=str(hashlib.md5("123456".strip().encode('utf-8')).hexdigest()),  # Mật khẩu mặc định
                 role=Role.TEACHER,
                 avatar="https://res.cloudinary.com/dqw4mc8dg/image/upload/v1733391370/aj6sc6isvelwkotlo1vw.png"
             )
@@ -218,10 +221,10 @@ def generate_data():
             db.session.add(teacher_info)
 
             for _ in range(num_admins):
-                # Tạo tài khoản nhân viên
+                # Tạo tài khoản admin
                 admin_user = User(
                     username=fake.unique.user_name(),
-                    password="123456",  # Mật khẩu mặc định
+                    password=str(hashlib.md5("123456".strip().encode('utf-8')).hexdigest()),  # Mật khẩu mặc định
                     role=Role.ADMIN,
                     avatar="https://res.cloudinary.com/dqw4mc8dg/image/upload/v1733391370/aj6sc6isvelwkotlo1vw.png"
                 )
