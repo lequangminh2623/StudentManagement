@@ -113,3 +113,24 @@ select.form-select {
     background-color: #d32f2f;
 }
 
+/************ Scroll to top ****************/
+.scrollToTop{
+    width: 4vw;
+    height: 7vh;
+    text-align:center;
+    background: whiteSmoke;
+    font-size: 50px;
+    font-weight: bold;
+    background-color: #e8eded ;
+    text-decoration: none;
+    position:fixed;
+    bottom:5px;
+    right:5px;
+    border-radius: 5px;
+    z-index: 99;
+    display: none;
+}
+
+.scrollToTop:hover{
+    text-decoration:none;
+}

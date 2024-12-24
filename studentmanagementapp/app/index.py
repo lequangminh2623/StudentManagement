@@ -9,7 +9,7 @@ from app.models import *
 
 @app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template('login.html')
 
 
 @login.user_loader
@@ -19,8 +19,6 @@ def load_user(user_id):
 
 @app.route("/login", methods=['GET', 'POST'])
 def login_process():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         username = request.form.get('username')
@@ -63,13 +61,8 @@ def logout():
     return redirect(url_for('index'))
 
 
+
 # Phân quyền
-@app.route('/admin')
-@login_required
-def admin():
-    if current_user.role != Role.ADMIN:
-        return "Access denied!", 403
-    return "Welcome to the admin page!"
 
 
 @app.route('/staff')

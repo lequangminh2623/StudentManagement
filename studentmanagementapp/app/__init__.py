@@ -24,6 +24,8 @@ migrate = Migrate(app, db)
 login = LoginManager(app=app)
 login.login_view = 'login_process'
 
+
+
 cloudinary.config(
     cloud_name=os.getenv("CLOUD_NAME"),
     api_key=os.getenv("API_KEY"),

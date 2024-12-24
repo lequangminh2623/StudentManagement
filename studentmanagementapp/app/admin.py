@@ -10,9 +10,13 @@ from wtforms.fields import DecimalField
 from wtforms.widgets import NumberInput
 from wtforms import validators
 from flask_admin.model.form import InlineFormAdmin
+from flask_login import current_user
 
 admin = Admin(app, name='StudentManagement', template_mode='bootstrap4')
 
+class xacThucView(ModelView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.user_role
 
 class ApplicationView(ModelView):
     column_list = ['name', 'gender', 'phone', 'address', 'email', 'birthday', 'status']
