@@ -1,9 +1,7 @@
 from flask import render_template, request, url_for, flash, session, redirect
-from app import dao, utils, login
-from app.models import Role
-import math
+from app import dao, utils, login, app
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from app.models import *
+from app.models import Role
 
 
 @app.route("/")
@@ -36,10 +34,10 @@ def login_process():
 
             user_role = dao.get_user_role(user.role)
 
-            if(user_role == "admin" or user_role == "staff"):
+            if current_user.role.name in ("admin", "staff"):
                 return redirect(url_for("admin.index"))
 
-            return redirect(url_for(user_role))
+            return redirect('/')
         else:
             flash('Tên đăng nhập hoặc mật khẩu không đúng.', 'error')
 
@@ -57,7 +55,9 @@ def dashboard():
 def logout():
     logout_user()
     session.clear()
+
     return redirect(url_for('login_process'))
+
 
 # Phân quyền
 @app.route('/teacher')
@@ -78,6 +78,7 @@ from datetime import datetime
 
 
 @app.route("/score", methods=['get', 'post'])
+@login_required
 def score_input():
     school_years = dao.get_school_years()
     #
@@ -123,3 +124,11 @@ def score_input():
 @login.user_loader
 def load_user(user_id):
     return dao.get_user_by_id(user_id)
+
+
+@app.context_processor
+def common_response():
+    return {
+        'Role': Role,
+        'current_year': datetime.now().year
+    }
