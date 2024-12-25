@@ -5,10 +5,17 @@ from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
     Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User, Semester, SchoolYear
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
-from flask_admin import Admin, BaseView, expose
+from flask_admin import Admin, BaseView, expose, AdminIndexView
 from flask import redirect, url_for, flash, request, Response
 
-admin = Admin(app, name='StudentManagement', template_mode='bootstrap4')
+class MyAdminIndexView(AdminIndexView):
+    @expose("/")
+    def index(self):
+
+        return self.render('admin/index.html')
+
+admin = Admin(app=app, name='Student Management', template_mode='bootstrap4', index_view=MyAdminIndexView())
+
 
 class BaseAdminView(ModelView):
     def is_accessible(self):
