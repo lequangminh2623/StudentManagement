@@ -1,4 +1,4 @@
-from sqlalchemy import func
+from sqlalchemy import func, case
 from sqlalchemy.sql.operators import contains
 from app.models import *
 from app import app
@@ -123,7 +123,27 @@ def get_students_and_scores_by_transcript_id(transcript_id):
             if score_type in student_scores[student.student_id]['scores']:
                 student_scores[student.student_id]['scores'][score_type].append(student.score)
 
-    return list(student_scores.values())
+
+def diem_stats(semester_id=None, subject_id=None):
+    # Query để lấy điểm và số lượng sinh viên đạt được điểm đó
+    query = db.session.query(
+        Score.score_number.label('score'),  # Cột điểm
+        func.count(Score.student_info_id).label('student_count')  # Số lượng sinh viên
+    ).join(Transcript, Transcript.id == Score.transcript_id) \
+     .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
+     .join(Semester, Semester.id == Transcript.semester_id)  # Giả định Transcript liên kết với Semester
+
+    # Lọc theo học kỳ nếu được cung cấp
+    if semester_id:
+        query = query.filter(Semester.id == semester_id)
+
+    # Lọc theo môn học nếu được cung cấp
+    if subject_id:
+        query = query.filter(Curriculum.subject_id == subject_id)
+
+    # Nhóm theo điểm số và trả kết quả
+    return query.group_by(Score.score_number).all()
+
 
 
 
