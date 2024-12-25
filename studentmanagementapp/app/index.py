@@ -1,4 +1,6 @@
-from flask import render_template, request, url_for, flash, session, redirect, jsonify
+import io
+from openpyxl import Workbook
+from flask import render_template, request, url_for, flash, session, redirect, jsonify, send_file
 from app import dao, utils, login, app
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from app.models import Role, Transcript, Classroom, Curriculum, Subject, SchoolYear, Semester
@@ -158,3 +160,4 @@ def common_response():
     return {
         'Role': Role,
     }
+

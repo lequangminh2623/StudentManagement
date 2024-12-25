@@ -1,0 +1,83 @@
+{% extends 'admin/base.html' %}
+
+{% block body %}
+<h1 class="text-center">Báo cáo thống kê</h1>
+
+<div class="row" style="margin-bottom: 10px">
+    <!-- Dropdowns for filtering -->
+    <div class="col-md-6 col-xs-12">
+        <form method="POST" action="{{ url_for('statsview.index') }}">
+            <div class="form-group">
+                <label for="semester">Chọn kỳ học:</label>
+                <select id="semester" name="semester_id" class="form-control">
+                    {% for semester in semesters %}
+                    <option value="{{ semester.id }}"
+                            {% if semester.id== selected_semester_id|int %}selected{% endif %}>
+                        {{ semester.school_year.school_year_name }} - {{ semester.semester_type.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="subject">Chọn môn học:</label>
+                <select id="subject" name="subject_id" class="form-control">
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}"
+                            {% if subject.id == selected_subject_id|int %}selected{% endif %}>
+                        {{ subject.subject_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Xem thống kê</button>
+        </form>
+    </div>
+
+    <!-- Chart -->
+    <div class="col-md-12 col-xs-12">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <!-- Export Button -->
+    <div style="margin-top: 20px">
+        <form method="POST" action="{{ url_for('statsview.export_excel') }}">
+            <input type="hidden" name="semester_id" value="{{ request.form.get('semester_id') }}">
+            <input type="hidden" name="subject_id" value="{{ request.form.get('subject_id') }}">
+            <button type="submit" class="btn btn-primary">Xuất file Excel</button>
+        </form>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    let soluong = [], diem = [];
+    {%for s in stats %}
+        soluong.push({{s[1]}});  // Số lượng sinh viên
+        diem.push(parseFloat({{s[0]}}).toFixed(1));  // Điểm số định dạng 1 số thập phân
+    {%endfor %}
+
+    const ctx = document.getElementById('myChart');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: diem,
+            datasets: [{
+                label: 'Phổ điểm môn {{ selected_subject_name }}',
+                data: soluong,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}

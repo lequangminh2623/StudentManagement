@@ -1,17 +1,21 @@
-from app import db, app
+from io import BytesIO
+
+import openpyxl
+
+from app import db, app, dao
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
-    Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User
+    Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User, Semester, SchoolYear
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
 from flask_admin import Admin, BaseView, expose
-from flask import redirect, url_for, flash
+from flask import redirect, url_for, flash, request, Response
 
 admin = Admin(app, name='StudentManagement', template_mode='bootstrap4')
 
 class BaseAdminView(ModelView):
     def is_accessible(self):
         if current_user.is_authenticated:
-            return current_user.role == Role.ADMIN
+            return current_user.role.__eq__(Role.ADMIN)
         return False
 
     def inaccessible_callback(self, name, **kwargs):
@@ -69,6 +73,80 @@ class LogoutView(AuthenticatedView):
         logout_user()
         return redirect('/admin')
 
+class StatsView(BaseView):
+    @expose('/', methods=['GET', 'POST'])
+    def index(self):
+        semesters = Semester.query.join(SchoolYear).all()
+        subjects = Subject.query.all()
+
+        stats = []
+        selected_semester_id = None  # Học kỳ được chọn
+        selected_subject_id = None  # Môn học được chọn
+        selected_subject_name = ""  # Tên môn học được chọn
+
+        if request.method == 'POST':
+            selected_semester_id = request.form.get('semester_id')
+            selected_subject_id = request.form.get('subject_id')
+
+            # Filter scores based on the selected semester and subject
+            stats = dao.diem_stats(semester_id=selected_semester_id, subject_id=selected_subject_id)
+
+            # Lấy tên môn học được chọn
+            if selected_subject_id:
+                subject = Subject.query.get(selected_subject_id)
+                if subject:
+                    selected_subject_name = subject.subject_name
+
+        return self.render('admin/stats.html',
+                           stats=stats,
+                           semesters=semesters,
+                           subjects=subjects,
+                           selected_semester_id=selected_semester_id,
+                           selected_subject_id=selected_subject_id,
+                           selected_subject_name=selected_subject_name)
+
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == Role.ADMIN
+
+    @expose('/export-excel', methods=['POST'])
+    def export_excel(self):
+        semester_id = request.form.get('semester_id')
+        subject_id = request.form.get('subject_id')
+
+        # Lấy thông tin học kỳ và môn học từ database
+        semester = Semester.query.get(semester_id)
+        subject = Subject.query.get(subject_id)
+
+        # Lấy dữ liệu điểm thống kê
+        stats = dao.diem_stats(semester_id=semester_id, subject_id=subject_id)
+
+        # Tạo workbook Excel
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Thống kê điểm"
+
+        # Thêm thông tin Học kỳ và Môn học
+        ws.append(["Học kỳ:", f"{semester.school_year.school_year_name} - {semester.semester_type.name}"])
+        ws.append(["Môn học:", subject.subject_name])
+        ws.append([])  # Dòng trống
+
+        # Thêm tiêu đề cột
+        ws.append(["Điểm", "Số lượng"])
+
+        # Thêm dữ liệu thống kê
+        for stat in stats:
+            ws.append([stat[0], stat[1]])
+
+        # Lưu workbook vào buffer
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        # Trả file Excel về client
+        response = Response(output, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        response.headers["Content-Disposition"] = "attachment; filename=thong_ke_diem.xlsx"
+        return response
+
 admin.add_view(ClassroomView(Classroom, db.session))
 admin.add_view(ApplicationView(ApplicationForm, db.session))
 admin.add_view(CurriculumView(Curriculum, db.session))
@@ -76,4 +154,5 @@ admin.add_view(StudentInfoView(StudentInfo, db.session))
 admin.add_view(RuleView(Rule, db.session))
 admin.add_view(SubjectView(Subject, db.session))
 admin.add_view(BaseAdminView(User, db.session))
+admin.add_view(StatsView(name='Stats'))
 admin.add_view(LogoutView(name='Logout'))
