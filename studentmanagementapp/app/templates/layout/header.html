@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-sm navbar-dark border-bottom border-1 border-white" style="background-color: #0e2238">
+<nav class="navbar navbar-expand-sm navbar-dark border-bottom border-1 border-white p-0" style="background-color: #0e2238">
     <div class="container-fluid">
         <a class="navbar-brand" href="/">
             <img width="50px" style="filter: invert(1);"  src="https://res.cloudinary.com/dqw4mc8dg/image/upload/v1735099489/pngegg_rhd2yg.png" alt="Dash Board">
@@ -10,7 +10,7 @@
             <ul class="navbar-nav me-auto">
                 {% if current_user.role == Role.TEACHER %}
                 <li class="nav-item">
-                    <a class="nav-link nav-item " id="nav-score" href="\score">Score Input</a>
+                    <a class="nav-link nav-item " id="nav-score" href="\transcripts">Transcript</a>
                 </li>
                 {% endif %}
             </ul>
@@ -18,8 +18,8 @@
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link text-danger" href={{current_user.avatar}}>
-                        <img src="{{ current_user.avatar }}" width="25" class="rounded-circle" />
                         Hi {{ current_user.username }}!
+                        <img src="{{ current_user.avatar }}" width="30" class="rounded-circle" />
                     </a>
                 </li>
                 <li class="nav-item">

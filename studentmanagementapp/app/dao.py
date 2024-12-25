@@ -17,52 +17,114 @@ def get_user_role(role):
 def get_user_id(user_id):
     return User.query.filter(User.id.__eq__(user_id)).first()
 
-def get_school_years():
-    return SchoolYear.query.all()
+def get_current_school_year():
+    return SchoolYear.query.order_by(-SchoolYear.id).first()
 
-def get_classrooms():
-    return Classroom.query.all()
+def get_subject_names_by_teacher(teacher_info_id, school_year_id):
+    query = db.session.query(Subject.subject_name) \
+        .join(Curriculum, Curriculum.subject_id == Subject.id) \
+        .join(Transcript, Transcript.curriculum_id == Curriculum.id) \
+        .join(Classroom, Classroom.id == Transcript.classroom_id) \
+        .join(Grade, Grade.id == Classroom.grade_id) \
+        .join(SchoolYear, SchoolYear.id == Grade.school_year_id) \
+        .filter(Transcript.teacher_info_id == teacher_info_id) \
+        .filter(SchoolYear.id == school_year_id) \
+        .distinct()
 
-def get_subjects():
-    return Subject.query.all()
+    return [subject[0] for subject in query.all()]
 
-def get_teacher_info_by_user_id(user_id):
-    """Lấy thông tin giáo viên dựa trên user_id."""
-    user = User.query.get(user_id)
-    if user and user.role == Role.TEACHER:
-        return TeacherInfo.query.filter_by(user_id=user_id).first()
-    return None
+def get_teacher(user_id=None):
+    query = TeacherInfo.query
+    if user_id:
+        query = query.filter(TeacherInfo.user_id==user_id)
 
-def get_transcripts_by_teacher_and_school_year(teacher_info_id, school_year_id):
-    """Lấy các bảng điểm của giáo viên trong một năm học cụ thể."""
-    return Transcript.query.join(Transcript.classroom).join(Classroom.grade).join(Grade.school_year).filter(
-        Transcript.teacher_info_id == teacher_info_id,
-        Grade.school_year_id == school_year_id
+    return query.first()
+
+from sqlalchemy import and_
+
+def get_transcripts(transcript_id=None, teacher_info_id=None, school_year_id=None, semester_type=None, subject_name=None):
+    if transcript_id:
+        query = db.session.query(
+            Classroom.classroom_name,
+            Subject.subject_name,
+            Semester.semester_type,
+            SchoolYear.school_year_name
+        ).select_from(Transcript) \
+            .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
+            .join(Subject, Subject.id == Curriculum.subject_id) \
+            .join(Semester, Semester.id == Transcript.semester_id) \
+            .join(Classroom, Classroom.id == Transcript.classroom_id) \
+            .join(Grade, Grade.id == Classroom.grade_id) \
+            .join(SchoolYear, SchoolYear.id == Grade.school_year_id) \
+            .filter(Transcript.id == transcript_id)
+        return query.first()
+
+    else:
+        query = db.session.query(
+            SchoolYear.school_year_name,
+            Semester.semester_type,
+            Classroom.classroom_name,
+            Subject.subject_name,
+            Transcript.id
+        ).select_from(Transcript) \
+            .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
+            .join(Subject, Subject.id == Curriculum.subject_id) \
+            .join(Semester, Semester.id == Transcript.semester_id) \
+            .join(Classroom, Classroom.id == Transcript.classroom_id) \
+            .join(Grade, Grade.id == Classroom.grade_id) \
+            .join(SchoolYear, SchoolYear.id == Grade.school_year_id) \
+            .filter(and_( # Use and_ for multiple conditions
+                Transcript.teacher_info_id == teacher_info_id,
+                SchoolYear.id == school_year_id,
+                Semester.semester_type == semester_type,
+                Subject.subject_name == subject_name
+            ))
+        return query.all()
+
+
+def get_students_and_scores_by_transcript_id(transcript_id):
+    # Truy vấn bảng điểm
+    transcript = Transcript.query.filter_by(id=transcript_id).first()
+    if not transcript:
+        return []
+
+    # Truy vấn danh sách học sinh thông qua ClassroomTransfer
+    students = db.session.query(
+        StudentInfo.id.label('student_id'),
+        StudentInfo.name.label('student_name'),
+        Score.score_number.label('score'),
+        Score.score_type.label('score_type')
+    ).outerjoin(
+        Score, (Score.student_info_id == StudentInfo.id) & (Score.transcript_id == transcript_id)
+    ).join(
+        ClassroomTransfer, ClassroomTransfer.student_info_id == StudentInfo.id
+    ).filter(
+        ClassroomTransfer.classroom_id == transcript.classroom_id
     ).all()
 
-def get_classroom_by_id(classroom_id):
-    """Lấy lớp học theo ID."""
-    return Classroom.query.get(classroom_id)
+    # Xử lý dữ liệu để gom nhóm theo học sinh và phân loại điểm
+    student_scores = {}
+    for student in students:
+        if student.student_id not in student_scores:
+            student_scores[student.student_id] = {
+                'student_id': student.student_id,
+                'student_name': student.student_name,
+                'scores': {
+                    'FIFTEEN_MINUTE': [],
+                    'ONE_PERIOD': [],
+                    'EXAM': []
+                }
+            }
 
-def get_subject_by_id(subject_id):
-    """Lấy môn học theo ID."""
-    return Subject.query.get(subject_id)
+        # Thêm điểm vào loại phù hợp nếu có
+        if student.score is not None:
+            score_type = student.score_type.name
+            if score_type in student_scores[student.student_id]['scores']:
+                student_scores[student.student_id]['scores'][score_type].append(student.score)
 
-# Các hàm khác có thể cần
+    return list(student_scores.values())
+
+
+
 def get_user_by_id(user_id):
     return User.query.get(user_id)
-
-def get_grade_by_school_year_and_grade_type(school_year_id, grade_type):
-    return Grade.query.filter_by(school_year_id = school_year_id, grade_type = grade_type).first()
-
-def get_semester_by_school_year_and_semester_type(school_year_id, semester_type):
-    return Semester.query.filter_by(school_year_id = school_year_id, semester_type = semester_type).first()
-
-def get_curriculum_by_grade_and_subject(grade_id, subject_id):
-    return Curriculum.query.filter_by(grade_id = grade_id, subject_id = subject_id).first()
-
-def get_student_info_by_user_id(user_id):
-    user = User.query.get(user_id)
-    if user and user.role == Role.STUDENT:
-        return StudentInfo.query.filter_by(user_id=user_id).first()
-    return None

@@ -1,29 +1,33 @@
 <aside id="sidebar" class="expand col-md-3">
-    <div class="d-flex">
-        <button class="toggle-btn" type="button">
-            <i class="lni lni-grid-alt"></i>
-            <span class="sidebar-logo">Select Menu</span>
-        </button>
-    </div>
-    <ul class="sidebar-nav">
-        {% for filter in filters %}
-        <li class="sidebar-item">
-            <label for="{{ filter.id }}" class="sidebar-label">
-                <span>{{ filter.name }}</span>
-            </label>
-            <select id="{{ filter.id }}" class="form-select w-auto">
-                {% for item in filter.data %}
-                <option>{{ item }}</option>
-                {% endfor %}
-            </select>
-        </li>
-        {% endfor %}
-    </ul>
-    <div class="text-end">
-        <button class="btn btn-outline-danger m-3 sidebar-btn" value="filter" >Select</button>
-    </div>
+    <form method="POST" id="filter-form">
+        <input type="hidden" name="action" value="filter">
+        <div class="d-flex">
+            <button class="toggle-btn" type="button">
+                <i class="lni lni-grid-alt"></i>
+                <span class="sidebar-logo">Select Menu</span>
+            </button>
+        </div>
+        <ul class="sidebar-nav">
+            {% for filter in filters %}
+            <li class="sidebar-item">
+                <label for="{{ filter.id }}" class="sidebar-label">
+                    <span>{{ filter.label }}</span>
+                </label>
+                <select id="{{ filter.id }}" name="{{ filter.id }}" class="form-select w-auto">
+                    {% for item in filter.data %}
+                    <option value="{{ item }}"
+                            {% if item == request.form.get(filter.id) %} selected {% endif %}>
+                        {{ item }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </li>
+            {% endfor %}
+        </ul>
+        <div class="text-end">
+            <button class="btn btn-outline-danger m-3 sidebar-btn" type="submit">Select</button>
+        </div>
+    </form>
 </aside>
 <link rel="stylesheet" href="static/css/style.css">
 <script src="static/script/script.js"></script>
-</body>
-</html>
