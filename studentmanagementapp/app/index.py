@@ -42,7 +42,6 @@ def login_process():
 
     return render_template('login.html')
 
-
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -56,7 +55,9 @@ def dashboard():
 def logout():
     logout_user()
     session.clear()
-    return redirect('/login')
+
+    return redirect(url_for('login_process'))
+
 
 
 # Phân quyền
