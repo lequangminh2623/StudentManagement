@@ -1,4 +1,4 @@
-from sqlalchemy import func
+from sqlalchemy import func, case
 from sqlalchemy.sql.operators import contains
 from app.models import *
 from app import app
@@ -67,12 +67,6 @@ def get_student_info_by_user_id(user_id):
     if user and user.role == Role.STUDENT:
         return StudentInfo.query.filter_by(user_id=user_id).first()
     return None
-
-from sqlalchemy import func, case
-
-from sqlalchemy import func
-
-from sqlalchemy import func
 
 def diem_stats(semester_id=None, subject_id=None):
     # Query để lấy điểm và số lượng sinh viên đạt được điểm đó
