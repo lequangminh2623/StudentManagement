@@ -1,12 +1,11 @@
 {% extends 'admin/base.html' %}
-
 {% block body %}
 <h1 class="text-center">Báo cáo thống kê</h1>
 
 <div class="row" style="margin-bottom: 10px">
     <!-- Dropdowns for filtering -->
     <div class="col-md-6 col-xs-12">
-        <form method="POST" action="{{ url_for('statsview.index') }}">
+        <form method="POST" action="{{ url_for('phodiem.index') }}">
             <div class="form-group">
                 <label for="semester">Chọn kỳ học:</label>
                 <select id="semester" name="semester_id" class="form-control">
@@ -40,7 +39,7 @@
 
     <!-- Export Button -->
     <div style="margin-top: 20px">
-        <form method="POST" action="{{ url_for('statsview.export_excel') }}">
+        <form method="POST" action="{{ url_for('phodiem.export_excel') }}">
             <input type="hidden" name="semester_id" value="{{ request.form.get('semester_id') }}">
             <input type="hidden" name="subject_id" value="{{ request.form.get('subject_id') }}">
             <button type="submit" class="btn btn-primary">Xuất file Excel</button>

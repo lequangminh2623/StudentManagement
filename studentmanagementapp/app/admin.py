@@ -1,14 +1,19 @@
 from io import BytesIO
 
+import PyPDF2
 import openpyxl
+from PyPDF2 import PdfMerger
 
 from app import db, app, dao
+from app.dao import get_summary_report, get_subjects, get_semesters, get_school_years
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
     Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User, Semester, SchoolYear
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
 from flask_admin import Admin, BaseView, expose
-from flask import redirect, url_for, flash, request, Response
+from flask import redirect, url_for, flash, request, Response, render_template, make_response
+
+from reportlab.pdfgen import canvas
 
 admin = Admin(app, name='StudentManagement', template_mode='bootstrap4')
 
@@ -73,7 +78,7 @@ class LogoutView(AuthenticatedView):
         logout_user()
         return redirect('/admin')
 
-class StatsView(BaseView):
+class PhoDiem(BaseView):
     @expose('/', methods=['GET', 'POST'])
     def index(self):
         semesters = Semester.query.join(SchoolYear).all()
@@ -97,7 +102,7 @@ class StatsView(BaseView):
                 if subject:
                     selected_subject_name = subject.subject_name
 
-        return self.render('admin/stats.html',
+        return self.render('admin/phodiem.html',
                            stats=stats,
                            semesters=semesters,
                            subjects=subjects,
@@ -105,8 +110,6 @@ class StatsView(BaseView):
                            selected_subject_id=selected_subject_id,
                            selected_subject_name=selected_subject_name)
 
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.role == Role.ADMIN
 
     @expose('/export-excel', methods=['POST'])
     def export_excel(self):
@@ -147,6 +150,43 @@ class StatsView(BaseView):
         response.headers["Content-Disposition"] = "attachment; filename=thong_ke_diem.xlsx"
         return response
 
+class BangDiemHocKy(BaseView):
+    @expose('/', methods=['GET', 'POST'])
+
+    def index(self):
+        from app.dao import get_subjects, get_semesters, get_school_years, get_summary_report
+
+        # Lấy dữ liệu cho dropdown
+        subjects = get_subjects()
+        semesters = get_semesters()
+        school_years = get_school_years()
+
+        report_data = None
+        selected_subject_id = None
+        selected_semester_id = None
+
+        if request.method == 'POST':
+            # Lấy dữ liệu từ form
+            selected_subject_id = request.form.get('subject_id')
+            selected_semester_id = request.form.get('semester_id')
+
+            # Lấy dữ liệu báo cáo
+            report_data = get_summary_report(subject_id=selected_subject_id, semester_id=selected_semester_id)
+
+        return self.render(
+            'admin/tongketmonhoc.html',
+            subjects=subjects,
+            semesters=semesters,
+            school_years=school_years,
+            report_data=report_data,
+            selected_subject_id=selected_subject_id,
+            selected_semester_id=selected_semester_id
+        )
+
+    @expose('/export-pdf', methods=['POST'])
+    def export_pdf(self):
+        return;
+
 admin.add_view(ClassroomView(Classroom, db.session))
 admin.add_view(ApplicationView(ApplicationForm, db.session))
 admin.add_view(CurriculumView(Curriculum, db.session))
@@ -154,5 +194,6 @@ admin.add_view(StudentInfoView(StudentInfo, db.session))
 admin.add_view(RuleView(Rule, db.session))
 admin.add_view(SubjectView(Subject, db.session))
 admin.add_view(BaseAdminView(User, db.session))
-admin.add_view(StatsView(name='Stats'))
+admin.add_view(PhoDiem(name='Phổ điểm', category="Stats"))
+admin.add_view(BangDiemHocKy(name='Bảng điểm', category="Stats"))
 admin.add_view(LogoutView(name='Logout'))
