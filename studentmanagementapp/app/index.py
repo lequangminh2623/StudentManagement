@@ -67,24 +67,6 @@ def logout():
 
     return redirect(url_for('login_process'))
 
-
-
-# # Phân quyền
-# @app.route('/teacher')
-# @login_required
-# def teacher():
-#     if current_user.role not in [Role.ADMIN, Role.TEACHER, Role.STUDENT]:
-#         return "Access denied!", 403
-#     return "Welcome to the teacher page!"
-#
-#
-# @app.route('/student')
-# @login_required
-# def student():
-#     return "Welcome to the student page!"
-
-
-
 @app.route("/transcripts", methods=['get', 'post'])
 @login_required
 def transcript_process():

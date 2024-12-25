@@ -1,7 +1,5 @@
 from io import BytesIO
-
 import openpyxl
-
 from app import db, app, dao
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
     Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User, Semester, SchoolYear
@@ -15,7 +13,7 @@ admin = Admin(app, name='StudentManagement', template_mode='bootstrap4')
 class BaseAdminView(ModelView):
     def is_accessible(self):
         if current_user.is_authenticated:
-            return current_user.role.__eq__(Role.ADMIN)
+            return current_user.role == Role.ADMIN
         return False
 
     def inaccessible_callback(self, name, **kwargs):

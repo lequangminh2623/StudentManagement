@@ -41,6 +41,7 @@ body {
     display: flex;
     flex-direction: column;
     max-height: 90vh;
+    overflow-y: auto;
 }
 
 #sidebar.expand {

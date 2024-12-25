@@ -1,7 +1,5 @@
-from sqlalchemy import func, case
-from sqlalchemy.sql.operators import contains
+from sqlalchemy import func
 from app.models import *
-from app import app
 import hashlib
 
 def check_user(username, password):
@@ -84,12 +82,10 @@ def get_transcripts(transcript_id=None, teacher_info_id=None, school_year_id=Non
 
 
 def get_students_and_scores_by_transcript_id(transcript_id):
-    # Truy vấn bảng điểm
     transcript = Transcript.query.filter_by(id=transcript_id).first()
     if not transcript:
         return []
 
-    # Truy vấn danh sách học sinh thông qua ClassroomTransfer
     students = db.session.query(
         StudentInfo.id.label('student_id'),
         StudentInfo.name.label('student_name'),
@@ -103,7 +99,6 @@ def get_students_and_scores_by_transcript_id(transcript_id):
         ClassroomTransfer.classroom_id == transcript.classroom_id
     ).all()
 
-    # Xử lý dữ liệu để gom nhóm theo học sinh và phân loại điểm
     student_scores = {}
     for student in students:
         if student.student_id not in student_scores:
@@ -117,31 +112,28 @@ def get_students_and_scores_by_transcript_id(transcript_id):
                 }
             }
 
-        # Thêm điểm vào loại phù hợp nếu có
         if student.score is not None:
             score_type = student.score_type.name
             if score_type in student_scores[student.student_id]['scores']:
                 student_scores[student.student_id]['scores'][score_type].append(student.score)
 
+    return list(student_scores.values())
+
 
 def diem_stats(semester_id=None, subject_id=None):
-    # Query để lấy điểm và số lượng sinh viên đạt được điểm đó
     query = db.session.query(
         Score.score_number.label('score'),  # Cột điểm
-        func.count(Score.student_info_id).label('student_count')  # Số lượng sinh viên
+        func.count(Score.student_info_id).label('student_count')
     ).join(Transcript, Transcript.id == Score.transcript_id) \
      .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
-     .join(Semester, Semester.id == Transcript.semester_id)  # Giả định Transcript liên kết với Semester
+     .join(Semester, Semester.id == Transcript.semester_id)
 
-    # Lọc theo học kỳ nếu được cung cấp
     if semester_id:
         query = query.filter(Semester.id == semester_id)
 
-    # Lọc theo môn học nếu được cung cấp
     if subject_id:
         query = query.filter(Curriculum.subject_id == subject_id)
 
-    # Nhóm theo điểm số và trả kết quả
     return query.group_by(Score.score_number).all()
 
 
