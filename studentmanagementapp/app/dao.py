@@ -1,3 +1,4 @@
+from sqlalchemy import func
 from sqlalchemy.sql.operators import contains
 from app.models import *
 from app import app
