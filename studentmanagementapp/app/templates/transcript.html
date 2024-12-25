@@ -1,0 +1,31 @@
+{% extends 'layout/base.html'%}
+
+{% block content %}
+<h1 style="text-align: center">Transcript</h1>
+{% if transcript_data %}
+     <div class="container mt-4">
+        <div class="row">
+            {% for transcript in transcript_data %}
+            <div class="col-md-6 mb-4">
+                <form id="form-{{ transcript.transcript_id }}" method="GET" action="/transcripts/{{ transcript.transcript_id }}">
+                    <input type="hidden" name="transcript_id" value="{{ transcript.transcript_id }}">
+                    <div class="card" ondblclick="document.getElementById('form-{{ transcript.transcript_id }}').submit();">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ transcript.classroom_name }} - {{ transcript.subject_name }}</h5>
+                            <p class="card-text">
+                                School Year: {{ transcript.school_year }}<br>
+                                Semester: {{ transcript.semester_type }}<br>
+                                Transcript ID: {{ transcript.transcript_id }}
+                            </p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+{% else %}
+    <p style="text-align: center">Can not find any transcript...</p>
+{% endif %}
+<link rel="stylesheet" href="static/css/transcript.css">
+{% endblock %}

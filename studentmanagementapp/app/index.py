@@ -18,7 +18,8 @@ def load_user(user_id):
 
 @app.route("/login", methods=['GET', 'POST'])
 def login_process():
-    login_error = None
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -84,76 +85,55 @@ def logout():
 
 
 
-@app.route("/score", methods=['get', 'post'])
+@app.route("/transcripts", methods=['get', 'post'])
 @login_required
-def score_input():
-    school_years = dao.get_school_years()
+def transcript_process():
+    if current_user.role == Role.TEACHER:
+        teacher_info = dao.get_teacher(current_user.id)
+        school_year = dao.get_current_school_year()
+        semesters = [
+            "FIRST_TERM",
+            "SECOND_TERM"
+        ]
+        subjects = dao.get_subject_names_by_teacher(school_year_id=school_year.id, teacher_info_id=teacher_info.id)
+        transcript_data = None
+        if request.method == 'POST':
+            if request.form.get('action') == 'filter':
+                selected_semester = request.form.get('semester')
+                selected_subject = request.form.get('subject')
 
-    # Lấy năm học gần nhất
-    latest_school_year = None
-    if school_years:
-        latest_school_year = max(school_years, key=lambda sy: int(sy.school_year_name.split('-')[0]))
+                transcripts = dao.get_transcripts(teacher_info_id=teacher_info.id, school_year_id=school_year.id, semester_type=selected_semester, subject_name=selected_subject)
+                transcript_data = []
+                for transcript in transcripts:
+                    transcript_data.append({
+                        'school_year': transcript.school_year_name,
+                        'semester_type': transcript.semester_type.name,
+                        'classroom_name': transcript.classroom_name,
+                        'subject_name': transcript.subject_name,
+                        'transcript_id': transcript.id
+                    })
+        filters = [
+            {"label": "Semester", "id": "semester", "data": semesters},
+            {"label": "Subject", "id": "subject", "data": subjects},
+        ]
 
-    semesters = [
-        "FIRST_TERM",
-        "SECOND_TERM"
-    ]
+    return render_template('transcript.html', filters=filters, transcript_data=transcript_data)
 
-    classrooms = []
-    subjects = []
+@app.route('/transcripts/<int:transcript_id>', methods=['GET'])
+def score_process(transcript_id):
+    student_scores = None
+    transcript_data = None
+    if request.method == 'GET':
+        transcript_data = dao.get_transcripts(transcript_id=transcript_id)
 
-    if current_user.role == Role.TEACHER and latest_school_year:
-        teacher_info = dao.get_teacher_info_by_user_id(current_user.id)
-        if teacher_info:
-            transcripts = dao.get_transcripts_by_teacher_and_school_year(teacher_info.id, latest_school_year.id)
+        student_scores = dao.get_students_and_scores_by_transcript_id(transcript_id)
 
-            classroom_ids = set()
-            subject_ids = set()
 
-            for transcript in transcripts:
-                classroom_ids.add(transcript.classroom_id)
-                subject_ids.add(transcript.curriculum.subject_id)
-
-            classrooms = [dao.get_classroom_by_id(id) for id in classroom_ids if
-                          dao.get_classroom_by_id(id) is not None]
-            subjects = [dao.get_subject_by_id(id) for id in subject_ids if dao.get_subject_by_id(id) is not None]
-
-    filters = [
-        {"name": "School Year", "id": "school-year", "data": school_years},
-        {"name": "Semester", "id": "semester", "data": semesters},
-        {"name": "Classroom", "id": "classroom", "data": classrooms},
-        {"name": "Subject", "id": "subject", "data": subjects}
-    ]
-    if request.method == 'POST':
-        selected_school_year = request.form.get('school-year')
-        selected_semester = request.form.get('semester')
-        selected_classroom = request.form.get('classroom')
-        selected_subject = request.form.get('subject')
-        query = Transcript.query
-
-        classroom_name = request.args.get('classroom_name')
-        if classroom_name:
-            query = query.join(Classroom).filter(Classroom.classroom_name == classroom_name)
-
-        curriculum_subject = request.args.get('curriculum_subject')
-        if curriculum_subject:
-            query = query.join(Curriculum).join(Subject).filter(Subject.subject_name == curriculum_subject)
-
-        semester_type = request.args.get('semester_type')
-        school_year_name = request.args.get('school_year_name')
-        if semester_type and school_year_name:
-            query = query.join(Semester).join(SchoolYear).filter(Semester.semester_type.name == semester_type).filter(
-                SchoolYear.school_year_name == school_year_name)
-
-        transcript = query.all()
-
-    return render_template('score.html', filters=filters, latest_school_year=latest_school_year,)
-
+    return render_template('score.html', student_scores=student_scores, transcript_data=transcript_data)
 
 @login.user_loader
 def load_user(user_id):
     return dao.get_user_by_id(user_id)
-
 
 @app.context_processor
 def common_response():

@@ -1,18 +1,8 @@
-const selectElements = document.querySelectorAll('.sidebar-nav select');
-const selectButton = document.querySelector('.sidebar-btn');
+const form = document.getElementById('filter-form');
+const submitButton = form.querySelector('button[class="sidebar-btn"]');
 
-selectButton.addEventListener('click', () => {
-  const selectedFilters = {};
-
-  selectElements.forEach(selectElement => {
-    const filterId = selectElement.id;
-    const selectedValue = selectElement.value;
-
-    selectedFilters[filterId] = selectedValue;
-  });
-
-  let queryString = '';
-  const hasFilters = Object.keys(selectedFilters).length > 0;
-
-
+submitButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    form.action = '/scores';
+    form.submit();
 });

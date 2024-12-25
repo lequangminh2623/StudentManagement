@@ -1,0 +1,16 @@
+.card {
+    cursor: pointer; /* Hiển thị con trỏ tay khi di chuột vào card */
+    transition: transform 0.2s ease-in-out; /* Hiệu ứng chuyển động */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Đổ bóng nhẹ */
+    border: none; /* Loại bỏ viền mặc định của card */
+}
+.card:hover {
+    transform: scale(1.02); /* Phóng to nhẹ khi hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Đổ bóng đậm hơn khi hover */
+}
+.card-title {
+  margin-bottom: 0.5rem;
+}
+.card-text {
+  font-size: 0.9rem; /* Giảm kích thước chữ một chút */
+}
