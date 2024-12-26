@@ -1,8 +1,10 @@
-from flask import render_template, request, url_for,session, redirect
+from flask import render_template, request, url_for, session, redirect, jsonify
 
-from app import dao, utils, login, app
+from app import dao, utils, login, app, db
 from flask_login import login_user, login_required, logout_user, current_user
-from app.models import Role
+
+from app.dao import delete_student_by_id
+from app.models import Role, StudentInfo, ClassroomTransfer
 
 
 @app.route("/")
@@ -66,6 +68,100 @@ def logout():
     session.clear()
 
     return redirect(url_for('login_process'))
+
+@app.route('/students', methods=['GET', 'POST'])
+@login_required
+def students():
+    school_years = dao.get_school_years()
+    classrooms = dao.get_classrooms()
+    filters = [
+        {"name": "School Year", "id": "school-year", "data": school_years},
+        {"name": "Classroom", "id": "classroom", "data": classrooms}
+    ]
+
+    return render_template('students.html', filters=filters)
+
+@app.route('/delete_student', methods=['POST'])
+def delete_student():
+    data = request.get_json()
+    student_id = data.get('student_id')
+
+    if not student_id:
+        return jsonify({"success": False, "message": "Thiếu student_id."}), 400
+
+    # Tìm học sinh trong cơ sở dữ liệu
+    student = StudentInfo.query.get(student_id)
+    if not student:
+        return jsonify({"success": False, "message": "Không tìm thấy học sinh."}), 404
+
+    try:
+        # Xóa học sinh khỏi cơ sở dữ liệu
+        ClassroomTransfer.query.filter_by(student_info_id=student_id).delete()
+        db.session.delete(student)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Xóa học sinh thành công."}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Lỗi khi xóa: {str(e)}"}), 500
+
+@app.route('/students_in_classroom', methods=['GET', 'POST'])
+def students_in_classroom():
+    try:
+        data = request.json
+        classroom_id = data.get('classroom_id')
+
+        if not classroom_id:
+            return jsonify({"error": "Không có classroom_id"}), 400
+
+        # Lấy danh sách học sinh từ DAO
+        students = dao.get_students_by_classroom(classroom_id)
+
+        if not students:
+            return jsonify({"error": "Không tìm thấy học sinh nào cho lớp học này"}), 404
+
+        # Lấy sĩ số lớp từ DAO
+        total_students = dao.get_classroom_and_student_count(classroom_id)
+
+        # Chuyển đổi đối tượng ApplicationForm thành JSON
+        students_data = [
+            {
+                "id": student.id,
+                "name": student.name,
+                "gender": student.gender.name,  # Enum cần chuyển đổi sang chuỗi
+                "phone": student.phone,
+                "address": student.address,
+                "email": student.email,
+                "birthday": student.birthday.strftime('%d-%m-%Y'),
+                "status": student.status.name  # Enum cần chuyển đổi sang chuỗi
+            }
+            for student in students
+        ]
+
+        return jsonify({
+            "students": students_data,
+            "total_students": total_students
+        }), 200
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "An error occurred"}), 500
+
+@app.route('/get_classroom_id', methods=['GET', 'POST'])
+def get_classroom_id():
+    try:
+        data = request.json
+        school_year_name = data.get("school_year_name")
+        classroom_name = data.get("classroom_name")
+
+        classroom_id = dao.get_classrooms_by_year_and_grade(school_year_name, classroom_name)
+
+        print(classroom_id)
+        if classroom_id:
+            return jsonify({"classroom_id": classroom_id})
+        else:
+            return jsonify({"error": "Classroom not found"}), 404
+    except Exception as e:
+        print(f"Error: {e}")
+        return jsonify({"error": "An error occurred"}), 500
 
 
 @app.route("/transcripts", methods=['get', 'post'])
