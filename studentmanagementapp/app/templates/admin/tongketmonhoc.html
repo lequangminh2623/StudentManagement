@@ -1,0 +1,217 @@
+{% extends 'admin/base.html' %}
+{% block body %}
+<div class="container mt-5">
+    <h1 class="text-center">BÁO CÁO TỔNG KẾT MÔN HỌC</h1>
+    <form method="POST" action="{{ url_for('bangdiemhocky.index') }}">
+        <div class="row">
+            <div class="col-md-4">
+                <label for="subject" class="form-label">Môn:</label>
+                <select id="subject" name="subject_id" class="form-select">
+                    <option value="">Chọn môn</option> <!-- Option mặc định -->
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}"
+                            {% if subject.id|string== selected_subject_id|string %}selected{% endif %}>
+                        {{ subject.subject_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="school_year" class="form-label">Năm học:</label>
+                <select id="school_year" name="school_year_id" class="form-select" onchange="fetchSemesters()">
+                    <option value="">Chọn năm học</option> <!-- Option mặc định -->
+                    {% for school_year in school_years %}
+                    <option value="{{ school_year.id }}"
+                            {% if school_year.id|string== selected_school_year_id|string %}selected{% endif %}>
+                        {{ school_year.school_year_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="semester" class="form-label">Học kỳ:</label>
+                <select name="semester_id" id="semester_id" class="form-select">
+                    <option value="">Chọn học kỳ</option>
+                    {% for semester in semesters %}
+                    <option value="{{ semester.id }}" {% if semester.id|string== selected_semester_id|string
+                            %}selected{% endif %}>
+                        {{ semester.semester_type.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mt-4 text-center">
+            <button type="submit" class="btn btn-primary">Xem báo cáo</button>
+        </div>
+    </form>
+    {% if report_data %}
+    <table class="table table-bordered mt-4">
+        <thead>
+        <tr>
+            <th>STT</th>
+            <th>Lớp</th>
+            <th>Sĩ số</th>
+            <th>Số lượng đạt</th>
+            <th>Tỷ lệ</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for row in report_data %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ row.classroom_name }}</td>
+            <td>{{ row.total_students }}</td>
+            <td>{{ row.passed_students }}</td>
+            <td>{{ row.pass_rate }}%</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+<div class="col-md-12 col-xs-12">
+    <h4 class="text-center">Sơ đồ thống kê</h4>
+    <canvas id="tyLeDau"></canvas>
+    <canvas id="siSoLop"></canvas>
+</div>
+
+<style>
+    .form-select {
+        --bs-form-select-bg-img: url(data:image/svg+xml,%3csvg xmlns= 'http://www.w3.org/2000/svg' viewBox= '0 0 16 16' %3e%3cpath fill= 'none' stroke= '%23343a40' stroke-linecap= 'round' stroke-linejoin= 'round' stroke-width= '2' d= 'm2 5 6 6 6-6' /%3e%3c/svg%3e);
+        display: block;
+        width: 100%;
+        padding: .375rem 2.25rem .375rem .75rem;
+        -moz-padding-start: calc(0.75rem - 3px);
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        background-repeat: no-repeat;
+        background-position: right .75rem center;
+        background-size: 16px 12px;
+        border-radius: .375rem;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    function fetchSemesters() {
+        const schoolYearId = document.getElementById('school_year').value;
+        const semesterDropdown = document.getElementById('semester_id');
+
+        // Clear the existing options
+        semesterDropdown.innerHTML = '<option value="">Chọn học kỳ</option>';
+
+        if (!schoolYearId) {
+            return;
+        }
+
+        // Gửi request đến server
+        fetch('{{ url_for("bangdiemhocky.get_semesters_by_school_year") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({school_year_id: schoolYearId})
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                // Cập nhật các tùy chọn cho dropdown học kỳ
+                data.forEach(semester => {
+                    const option = document.createElement('option');
+                    option.value = semester.id;
+                    option.textContent = semester.name;
+                    semesterDropdown.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching semesters:', error);
+            });
+    }
+
+    let tenlop = [], siso = [], soLuongHSPass = [], tyLe = []
+
+    {% for r in report_data %}
+        tenlop.push({{ r[0] }})
+        siso.push( {{ r[1] }} )
+        soLuongHSPass.push( {{ r[2] }} )
+        tyLe.push( {{ r[3] }} )
+    {% endfor %}
+
+    const ctx = document.getElementById('tiLeDau');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: tenlop,
+            datasets: [
+                {
+                    label: 'Tỷ lệ',
+                    data: tyLe,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    const abc = document.getElementById('siSoLop');
+    var myChart = new Chart(abc, {
+        type: 'bar',
+        data: {
+            labels: tenlop,
+            datasets: [{
+                label: 'Sĩ số',
+                data: siso,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+</script>
+{% endblock %}
+
+

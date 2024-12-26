@@ -1,12 +1,13 @@
 from io import BytesIO
 import openpyxl
 from app import db, app, dao
+from app.dao import get_summary_report, get_subjects, get_semesters, get_school_years
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
     Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User, Semester, SchoolYear
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
-from flask_admin import Admin, BaseView, expose, AdminIndexView
-from flask import redirect, url_for, flash, request, Response
+from flask import redirect, url_for, flash, request, Response, render_template, make_response, send_file, jsonify
+
 
 class MyAdminIndexView(AdminIndexView):
     @expose("/")
@@ -78,7 +79,7 @@ class LogoutView(AuthenticatedView):
         logout_user()
         return redirect('/admin')
 
-class StatsView(BaseView):
+class PhoDiem(BaseView):
     @expose('/', methods=['GET', 'POST'])
     def index(self):
         semesters = Semester.query.join(SchoolYear).all()
@@ -102,7 +103,7 @@ class StatsView(BaseView):
                 if subject:
                     selected_subject_name = subject.subject_name
 
-        return self.render('admin/stats.html',
+        return self.render('admin/phodiem.html',
                            stats=stats,
                            semesters=semesters,
                            subjects=subjects,
@@ -110,8 +111,6 @@ class StatsView(BaseView):
                            selected_subject_id=selected_subject_id,
                            selected_subject_name=selected_subject_name)
 
-    def is_accessible(self):
-        return current_user.is_authenticated and current_user.role == Role.ADMIN
 
     @expose('/export-excel', methods=['POST'])
     def export_excel(self):
@@ -152,6 +151,57 @@ class StatsView(BaseView):
         response.headers["Content-Disposition"] = "attachment; filename=thong_ke_diem.xlsx"
         return response
 
+class BangDiemHocKy(BaseView):
+    @expose('/get_semesters', methods=['POST'])
+    def get_semesters_by_school_year(self):
+        school_year_id = request.json.get('school_year_id')
+        if not school_year_id:
+            return jsonify({'error': 'Missing school_year_id'}), 400
+
+        semesters = Semester.query.filter_by(school_year_id=school_year_id).all()
+        result = [{'id': semester.id, 'name': semester.semester_type.name} for semester in semesters]
+        return jsonify(result)
+
+    @expose('/', methods=['GET', 'POST'])
+    def index(self, **kwargs):
+        from app.dao import get_subjects, get_school_years, get_summary_report
+
+        # Lấy dữ liệu cho dropdown
+        subjects = get_subjects()  # Tất cả môn học
+        school_years = get_school_years()  # Tất cả năm học
+
+        # Lấy thông tin từ URL
+        selected_subject_id = request.args.get('subject_id')
+        selected_school_year_id = request.args.get('school_year_id')
+        selected_semester_id = request.args.get('semester_id')
+
+        # Lấy danh sách học kỳ tương ứng với năm học được chọn
+        semesters = (
+            Semester.query.filter_by(school_year_id=selected_school_year_id).all()
+            if selected_school_year_id else []
+        )
+
+        # Lấy dữ liệu báo cáo nếu có đủ thông tin
+        report_data = (
+            get_summary_report(subject_id=selected_subject_id, semester_id=selected_semester_id)
+            if selected_subject_id and selected_semester_id else None
+        )
+
+        # Truyền giá trị đã chọn xuống template
+        return self.render(
+            'admin/tongketmonhoc.html',
+            subjects=subjects,
+            school_years=school_years,
+            semesters=semesters,
+            report_data=report_data,
+            selected_subject_id=selected_subject_id,
+            selected_school_year_id=selected_school_year_id,
+            selected_semester_id=selected_semester_id
+        )
+
+
+
+
 admin.add_view(ClassroomView(Classroom, db.session))
 admin.add_view(ApplicationView(ApplicationForm, db.session))
 admin.add_view(CurriculumView(Curriculum, db.session))
@@ -159,5 +209,6 @@ admin.add_view(StudentInfoView(StudentInfo, db.session))
 admin.add_view(RuleView(Rule, db.session))
 admin.add_view(SubjectView(Subject, db.session))
 admin.add_view(BaseAdminView(User, db.session))
-admin.add_view(StatsView(name='Stats'))
+admin.add_view(PhoDiem(name='Phổ điểm', category="Stats"))
+admin.add_view(BangDiemHocKy(name='Bảng điểm', category="Stats"))
 admin.add_view(LogoutView(name='Logout'))
