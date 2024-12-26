@@ -1,9 +1,8 @@
-import io
-from openpyxl import Workbook
-from flask import render_template, request, url_for, flash, session, redirect, jsonify, send_file
+from flask import render_template, request, url_for,session, redirect
+
 from app import dao, utils, login, app
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from app.models import Role, Transcript, Classroom, Curriculum, Subject, SchoolYear, Semester
+from flask_login import login_user, login_required, logout_user, current_user
+from app.models import Role
 
 
 @app.route("/")
@@ -51,6 +50,7 @@ def login_process():
 
     return render_template('login.html', login_error=login_error)
 
+
 @app.route("/dashboard")
 @login_required
 def dashboard():
@@ -67,9 +67,12 @@ def logout():
 
     return redirect(url_for('login_process'))
 
+
 @app.route("/transcripts", methods=['get', 'post'])
 @login_required
 def transcript_process():
+    filters = None
+    transcript_data = None
     if current_user.role == Role.TEACHER:
         teacher_info = dao.get_teacher(current_user.id)
         school_year = dao.get_current_school_year()
@@ -83,8 +86,8 @@ def transcript_process():
             if request.form.get('action') == 'filter':
                 selected_semester = request.form.get('semester')
                 selected_subject = request.form.get('subject')
-
-                transcripts = dao.get_transcripts(teacher_info_id=teacher_info.id, school_year_id=school_year.id, semester_type=selected_semester, subject_name=selected_subject)
+                transcripts = dao.get_transcripts(teacher_info_id=teacher_info.id, school_year_id=school_year.id,
+                                                  semester_type=selected_semester, subject_name=selected_subject)
                 transcript_data = []
                 for transcript in transcripts:
                     transcript_data.append({
@@ -101,25 +104,84 @@ def transcript_process():
 
     return render_template('transcript.html', filters=filters, transcript_data=transcript_data)
 
-@app.route('/transcripts/<int:transcript_id>', methods=['GET'])
+
+@app.route('/transcripts/<int:transcript_id>', methods=['GET', 'POST'])
+@login_required
 def score_process(transcript_id):
-    student_scores = None
-    transcript_data = None
-    if request.method == 'GET':
-        transcript_data = dao.get_transcripts(transcript_id=transcript_id)
+    transcript_info = dao.get_transcripts(transcript_id=transcript_id)
+    transcript = dao.get_students_and_scores_by_transcript_id(transcript_id)
 
-        student_scores = dao.get_students_and_scores_by_transcript_id(transcript_id)
+    if request.method == 'POST':
+        # Lấy dữ liệu từ form
+        form_data = request.form
+        updated_scores = []
+        new_scores = []
+        deleted_scores = []
 
+        for key, value in form_data.items():
+            value = value.strip()
+            student_id, score_id, score_type, index = key.split('-')
+            student_id = int(student_id)
+            score_number = float(value) if value else None
 
-    return render_template('score.html', student_scores=student_scores, transcript_data=transcript_data)
+            if score_id == 'new':
+                if score_number is not None:
+                    new_scores.append({
+                        'student_id': student_id,
+                        'score_number': score_number,
+                        'score_type': score_type,
+                        'transcript_id': transcript_id
+                    })
+            else:
+                score_id = int(score_id)
+                for student in transcript:
+                    if student['student_id'] == student_id:
+                        original_scores = student[score_type]
+                        original_score = next((s for s in original_scores if s['score_id'] == score_id), None)
+
+                        if original_score:
+                            if score_number is None:
+                                deleted_scores.append(score_id)
+                            elif original_score['score'] != score_number:
+                                updated_scores.append({
+                                    'score_id': score_id,
+                                    'score_number': score_number
+                                })
+                        break
+
+        for score in new_scores:
+            dao.create_score(
+                score_value=score['score_number'],
+                student_info_id=score['student_id'],
+                transcript_id=score['transcript_id'],
+                score_type=score['score_type'],
+
+            )
+        for score in updated_scores:
+            dao.update_score(
+                score_id=score['score_id'],
+                new_value=score['score_number']
+            )
+        for score_id in deleted_scores:
+            dao.delete_score(score_id)
+
+        return redirect(url_for('score_process', transcript_id=transcript_id))
+
+    return render_template(
+        'score.html',
+        transcript=transcript,
+        transcript_info=transcript_info,
+        transcript_id=transcript_id
+    )
+
 
 @login.user_loader
 def load_user(user_id):
     return dao.get_user_by_id(user_id)
+
 
 @app.context_processor
 def common_response():
     return {
         'Role': Role,
     }
-

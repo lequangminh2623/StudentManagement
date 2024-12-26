@@ -8,16 +8,20 @@ def check_user(username, password):
     return User.query.filter(User.username.__eq__(username),
                               User.password.__eq__(password)).first()
 
+
 def get_user_role(role):
     if isinstance(role, Role):
         return role.name.lower()
     return None
 
+
 def get_user_id(user_id):
     return User.query.filter(User.id.__eq__(user_id)).first()
 
+
 def get_current_school_year():
     return SchoolYear.query.order_by(-SchoolYear.id).first()
+
 
 def get_subject_names_by_teacher(teacher_info_id, school_year_id):
     query = db.session.query(Subject.subject_name) \
@@ -32,6 +36,7 @@ def get_subject_names_by_teacher(teacher_info_id, school_year_id):
 
     return [subject[0] for subject in query.all()]
 
+
 def get_teacher(user_id=None):
     query = TeacherInfo.query
     if user_id:
@@ -40,6 +45,7 @@ def get_teacher(user_id=None):
     return query.first()
 
 from sqlalchemy import and_
+
 
 def get_transcripts(transcript_id=None, teacher_info_id=None, school_year_id=None, semester_type=None, subject_name=None):
     if transcript_id:
@@ -90,7 +96,8 @@ def get_students_and_scores_by_transcript_id(transcript_id):
         StudentInfo.id.label('student_id'),
         StudentInfo.name.label('student_name'),
         Score.score_number.label('score'),
-        Score.score_type.label('score_type')
+        Score.score_type.label('score_type'),
+        Score.id.label('score_id')
     ).outerjoin(
         Score, (Score.student_info_id == StudentInfo.id) & (Score.transcript_id == transcript_id)
     ).join(
@@ -105,19 +112,50 @@ def get_students_and_scores_by_transcript_id(transcript_id):
             student_scores[student.student_id] = {
                 'student_id': student.student_id,
                 'student_name': student.student_name,
-                'scores': {
-                    'FIFTEEN_MINUTE': [],
-                    'ONE_PERIOD': [],
-                    'EXAM': []
-                }
+                'FIFTEEN_MINUTE': [],  # Danh sách điểm 15 phút
+                'ONE_PERIOD': [],      # Danh sách điểm 1 tiết
+                'EXAM': []            # Danh sách điểm thi
             }
 
         if student.score is not None:
             score_type = student.score_type.name
-            if score_type in student_scores[student.student_id]['scores']:
-                student_scores[student.student_id]['scores'][score_type].append(student.score)
+            score_data = {
+                'score_id': student.score_id,
+                'score': student.score,
+            }
+            student_scores[student.student_id][score_type].append(score_data) # Lưu trực tiếp vào danh sách
 
     return list(student_scores.values())
+
+
+def update_score(score_id, new_value):
+    score = Score.query.get(score_id)
+    if score:
+        score.score_number = new_value
+        db.session.commit()
+        return True
+    return False
+
+
+def delete_score(score_id):
+    score = Score.query.get(score_id)
+    if score:
+        db.session.delete(score)
+        db.session.commit()
+        return True
+    return False
+
+
+def create_score(student_info_id, transcript_id, score_type, score_value):
+    new_score = Score(
+        score_number=score_value,
+        score_type=score_type,
+        student_info_id=student_info_id,
+        transcript_id=transcript_id
+    )
+    db.session.add(new_score)
+    db.session.commit()
+    return new_score.id
 
 
 def diem_stats(semester_id=None, subject_id=None):
@@ -135,8 +173,6 @@ def diem_stats(semester_id=None, subject_id=None):
         query = query.filter(Curriculum.subject_id == subject_id)
 
     return query.group_by(Score.score_number).all()
-
-
 
 
 def get_user_by_id(user_id):
