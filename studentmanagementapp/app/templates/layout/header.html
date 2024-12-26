@@ -17,17 +17,17 @@
             <ul class="navbar-nav ms-auto">
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href={{current_user.avatar}}>
+                    <a class="nav-link text-success" href={{current_user.avatar}}>
                         Hi {{ current_user.username }}!
                         <img src="{{ current_user.avatar }}" width="30" class="rounded-circle" />
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-success" href="/logout">Logout</a>
+                    <a class="nav-link text-danger" href="/logout">Logout</a>
                 </li>
                 {% else %}
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href="/login">Login</a>
+                    <a class="nav-link text-warning" href="/login">Login</a>
                 </li>
                 {% endif %}
             </ul>

@@ -1,4 +1,4 @@
-from sqlalchemy import func, case
+from sqlalchemy import func, case, cast
 from app.models import *
 import hashlib
 
@@ -157,10 +157,47 @@ def create_score(student_info_id, transcript_id, score_type, score_value):
     db.session.commit()
     return new_score.id
 
+def get_transcript_avg(transcript_id):
+    transcript = Transcript.query.get(transcript_id)
+    if not transcript:
+        return None  # Hoặc xử lý lỗi tùy theo ứng dụng
+
+    school_year_name = transcript.semester.school_year.school_year_name
+    classroom_name = transcript.classroom.classroom_name
+
+    student_scores = db.session.query(
+        StudentInfo.name,
+        Semester.semester_type,
+        func.avg(Score.score_number).label('average_score')
+    ).join(Score, Score.student_info_id == StudentInfo.id)\
+    .join(Transcript, Transcript.id == Score.transcript_id)\
+    .join(Semester, Semester.id == Transcript.semester_id)\
+    .filter(Transcript.classroom_id == transcript.classroom_id)\
+    .group_by(StudentInfo.name, Semester.semester_type)\
+    .all()
+
+    result = []
+    for student_name, semester_type, average_score in student_scores:
+        student_data = next((item for item in result if item['student_info_name'] == student_name), None)
+        if not student_data:
+            student_data = {'student_info_name': student_name, 'average_score_semester_1': None, 'average_score_semester_2': None}
+            result.append(student_data)
+
+        if semester_type == SemesterType.FIRST_TERM:
+            student_data['average_score_semester_1'] = round(average_score, 1)
+        elif semester_type == SemesterType.SECOND_TERM:
+            student_data['average_score_semester_2'] = round(average_score, 1)
+
+    final_result = {
+        'school_year_name': school_year_name,
+        'classroom_name': classroom_name,
+        'student_scores': result
+    }
+    return final_result
 
 def diem_stats(semester_id=None, subject_id=None):
     query = db.session.query(
-        Score.score_number.label('score'),  # Cột điểm
+        Score.score_number.label('score'),
         func.count(Score.student_info_id).label('student_count')
     ).join(Transcript, Transcript.id == Score.transcript_id) \
      .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
@@ -187,9 +224,6 @@ def get_semesters():
 def get_school_years():
     return SchoolYear.query.all()
 
-def get_classrooms():
-    return Classroom.query.all()
-
 def get_summary_report(subject_id, semester_id):
     query = db.session.query(
         Classroom.classroom_name.label('classroom_name'),
@@ -201,59 +235,7 @@ def get_summary_report(subject_id, semester_id):
         .join(Classroom, Classroom.id == Transcript.classroom_id) \
         .filter(Transcript.curriculum.has(subject_id=subject_id), Transcript.semester_id == semester_id) \
         .group_by(Classroom.classroom_name) \
-        .all()
-
-    return query
-
-def get_students_by_classroom(classroom_id):
-    try:
-        # Truy vấn danh sách tên học sinh qua ApplicationForm
-        students = db.session.query(ApplicationForm).join(
-            StudentInfo, StudentInfo.application_form_id == ApplicationForm.id
-        ).join(
-            ClassroomTransfer, ClassroomTransfer.id == StudentInfo.application_form_id
-        ).filter(
-            ClassroomTransfer.classroom_id == classroom_id
-        ).all()
-
-        return students
-    except Exception as e:
-        print(f"Error in get_students_by_classroom: {e}")
-        return []
 
 
-def get_classrooms_by_year_and_grade(school_year_name, classroom_name):
-    classroom = (db.session.query(Classroom).join(
-        Grade, Classroom.grade_id == Grade.id
-    ).join(
-        SchoolYear, SchoolYear.id == Grade.school_year_id)
-    .filter(
-        SchoolYear.school_year_name == school_year_name,
-        Classroom.classroom_name == classroom_name
-    ).first())  # Dùng first() để lấy 1 lớp đầu tiên nếu tìm thấy
-    if classroom:
-        return classroom.id
-    else:
-        return None
+    return query.all()
 
-def get_classroom_and_student_count(classroom_id):
-    try:
-        classroom = db.session.query(Classroom).filter(Classroom.id == classroom_id).first()
-        return classroom.student_number
-    except Exception as e:
-        print(f"Error in get_total_students_by_classroom: {e}")
-        return 0
-
-def get_student_info_by_id(student_info_id):
-    return db.session.query(StudentInfo).filter(StudentInfo.id == student_info_id).first()
-
-def delete_student_by_id(student_info_id):
-    # Tìm học sinh theo ID
-    student = StudentInfo.query.get(student_info_id)
-    if student:
-        # Xóa học sinh khỏi cơ sở dữ liệu
-        db.session.delete(student)
-        db.session.commit()
-        return {"success": True, "message": "Xóa học sinh thành công"}
-    else:
-        return {"success": False, "message": "Không tìm thấy học sinh"}

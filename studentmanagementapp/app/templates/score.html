@@ -11,13 +11,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
             integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
             crossorigin="anonymous"></script>
-    <script src="static/script/score.js"></script>
+    <script src="{{ url_for('static', filename='script/score.js') }}"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
     <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/score.css') }}">
-
 </head>
 <body>
 {% block header %}
@@ -38,12 +37,13 @@
                 </div>
             </div>
         </div>
+        <button class="btn btn-warning m-3 float-end" id="export-button" data-transcript-id="{{ transcript_id }}">Export</button>
         <form method="POST" action="{{ url_for('score_process', transcript_id=transcript_id) }}">
             <button type="submit" class="btn btn-primary m-3 float-end">Save Scores</button>
             <table class="table table-bordered">
                 <thead>
                 <tr>
-                    <th rowspan="2">STT</th>
+                    <th rowspan="2">Index</th>
                     <th rowspan="2">Name</th>
                     <th colspan="5">15-minute Score</th>
                     <th colspan="3">One-Period Score</th>
@@ -84,8 +84,6 @@
         </form>
     </div>
 </div>
-
-
 {% block footer %}
 {% include 'layout/footer.html' %}
 {% endblock %}

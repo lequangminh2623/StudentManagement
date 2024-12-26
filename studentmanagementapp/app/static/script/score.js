@@ -1,8 +1,7 @@
-const form = document.getElementById('filter-form');
-const submitButton = form.querySelector('button[class="sidebar-btn"]');
-
-submitButton.addEventListener('click', (event) => {
-    event.preventDefault();
-    form.action = '/scores';
-    form.submit();
-});
+window.onload = function() {
+    const exportButton = document.getElementById('export-button');
+    exportButton.addEventListener('click', function() {
+        const transcriptId = this.dataset.transcriptId;
+        window.location.href = `/transcripts/${transcriptId}/export`;
+    });
+}
