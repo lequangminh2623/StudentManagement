@@ -179,7 +179,8 @@ def score_process(transcript_id):
 @login_required
 def export_transcript(transcript_id):
     if current_user.role == Role.TEACHER:
-        return render_template('export_transcript.html')
+        results = dao.get_scores_by_transcript_id(transcript_id)
+        return render_template('scores_report.html', results=results)
 
 
 @login.user_loader

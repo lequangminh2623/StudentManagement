@@ -8,29 +8,6 @@ def check_user(username, password):
     return User.query.filter(User.username.__eq__(username),
                               User.password.__eq__(password)).first()
 
-# def get_scores_by_school_year(school_year_name):
-#     # Lấy ID của năm học
-#     school_year = SchoolYear.query.filter_by(school_year_name=school_year_name).first()
-#     if not school_year:
-#         return []
-#
-#     # Truy vấn transcript và tính điểm trung bình cho từng học kỳ
-#     results = db.session.query(
-#         StudentInfo.student_name,
-#         Classroom.classroom_name,
-#         Subject.subject_name,
-#         func.avg(
-#             when(Score.score_type == ScoreType.FIRST_TERM_AVERAGE, Score.score_number)
-#         ).label('avg_hk1'),
-#         func.avg(
-#             when(Score.score_type == ScoreType.SECOND_TERM_AVERAGE, Score.score_number)
-#         ).label('avg_hk2')
-#     ).join(Transcript).join(Curriculum).join(Subject).join(Classroom).join(Grade).join(SchoolYear).join(
-#         StudentInfo).filter(
-#         SchoolYear.id == school_year.id
-#     ).group_by(Transcript.student_info_id, Transcript.curriculum_id, StudentInfo.student_name, Classroom.classroom_name,
-#                Subject.subject_name).all()
-#     return results
 
 def get_user_role(role):
     if isinstance(role, Role):
