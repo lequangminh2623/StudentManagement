@@ -64,7 +64,7 @@
         data: {
             labels: diem,
             datasets: [{
-                label: 'Phổ điểm môn {{ selected_subject_name }}',
+                label: 'Môn {{ selected_subject_name }}',
                 data: soluong,
                 borderWidth: 1
             }]
@@ -74,6 +74,12 @@
                 y: {
                     beginAtZero: true
                 }
+            }
+        },
+        plugins: {
+            title: {
+                display: true,
+                text: 'Phổ điểm môn học'
             }
         }
     });

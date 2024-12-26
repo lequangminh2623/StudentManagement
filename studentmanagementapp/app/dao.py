@@ -151,7 +151,7 @@ def get_subjects():
     return Subject.query.all()
 
 def get_semesters():
-    return Semester.query.join(SchoolYear).all()
+    return db.session.query(Semester.semester_type).distinct().all()
 
 def get_school_years():
     return SchoolYear.query.all()
