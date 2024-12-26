@@ -195,8 +195,33 @@ def diem_stats(semester_id=None, subject_id=None):
     if subject_id:
         query = query.filter(Curriculum.subject_id == subject_id)
 
-    return query.group_by(Score.score_number).all()
+    return query.group_by(Score.score_number).order_by(Score.score_number.asc()).all()
 
 
 def get_user_by_id(user_id):
     return User.query.get(user_id)
+
+def get_subjects():
+    return Subject.query.all()
+
+def get_semesters():
+    return db.session.query(Semester.semester_type).distinct().all()
+
+def get_school_years():
+    return SchoolYear.query.all()
+
+def get_summary_report(subject_id, semester_id):
+    query = db.session.query(
+        Classroom.classroom_name.label('classroom_name'),
+        func.count(Score.student_info_id).label('total_students'),
+        func.sum(case((Score.score_number >= 5, 1), else_=0)).label('passed_students'),
+        (func.sum(case((Score.score_number >= 5, 1), else_=0)) / func.count(Score.student_info_id) * 100).label(
+            'pass_rate')
+    ).join(Transcript, Transcript.id == Score.transcript_id) \
+        .join(Classroom, Classroom.id == Transcript.classroom_id) \
+        .filter(Transcript.curriculum.has(subject_id=subject_id), Transcript.semester_id == semester_id) \
+        .group_by(Classroom.classroom_name) \
+        .all()
+
+    return query
+
