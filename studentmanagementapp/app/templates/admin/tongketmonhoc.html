@@ -2,7 +2,7 @@
 {% block body %}
 <div class="container mt-5">
     <h1 class="text-center">BÁO CÁO TỔNG KẾT MÔN HỌC</h1>
-    <form method="POST" action="{{ url_for('bangdiemhocky.index') }}">
+    <form method="POST" action="/admin/bangdiemhocky/">
         <div class="row">
             <div class="col-md-4">
                 <label for="subject" class="form-label">Môn:</label>
@@ -114,7 +114,7 @@
         }
 
         // Gửi request đến server
-        fetch('{{ url_for("bangdiemhocky.get_semesters_by_school_year") }}', {
+        fetch('/admin/get_semesters/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 from io import BytesIO
 import openpyxl
+from flask_admin import AdminIndexView, expose, Admin, BaseView
 from app import db, app, dao
 from app.dao import get_summary_report, get_subjects, get_semesters, get_school_years
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
@@ -75,13 +76,13 @@ class AuthenticatedView(BaseView):
 
 class LogoutView(AuthenticatedView):
     @expose('/')
-    def index(self):
+    def __index__(self):
         logout_user()
         return redirect('/admin')
 
 class PhoDiem(BaseView):
     @expose('/', methods=['GET', 'POST'])
-    def index(self):
+    def __index__(self):
         semesters = Semester.query.join(SchoolYear).all()
         subjects = Subject.query.all()
 
@@ -152,18 +153,8 @@ class PhoDiem(BaseView):
         return response
 
 class BangDiemHocKy(BaseView):
-    @expose('/get_semesters', methods=['POST'])
-    def get_semesters_by_school_year(self):
-        school_year_id = request.json.get('school_year_id')
-        if not school_year_id:
-            return jsonify({'error': 'Missing school_year_id'}), 400
-
-        semesters = Semester.query.filter_by(school_year_id=school_year_id).all()
-        result = [{'id': semester.id, 'name': semester.semester_type.name} for semester in semesters]
-        return jsonify(result)
-
     @expose('/', methods=['GET', 'POST'])
-    def index(self, **kwargs):
+    def __index__(self):
         from app.dao import get_subjects, get_school_years, get_summary_report
 
         # Lấy dữ liệu cho dropdown
@@ -184,7 +175,7 @@ class BangDiemHocKy(BaseView):
         # Lấy dữ liệu báo cáo nếu có đủ thông tin
         report_data = (
             get_summary_report(subject_id=selected_subject_id, semester_id=selected_semester_id)
-            if selected_subject_id and selected_semester_id else None
+            if selected_subject_id and selected_semester_id else []
         )
 
         # Truyền giá trị đã chọn xuống template
@@ -198,6 +189,15 @@ class BangDiemHocKy(BaseView):
             selected_school_year_id=selected_school_year_id,
             selected_semester_id=selected_semester_id
         )
+    @expose('/get_semesters', methods=['POST'])
+    def get_semesters_by_school_year(self):
+        school_year_id = request.json.get('school_year_id')
+        if not school_year_id:
+            return jsonify({'error': 'Missing school_year_id'}), 400
+
+        semesters = Semester.query.filter_by(school_year_id=school_year_id).all()
+        result = [{'id': semester.id, 'name': semester.semester_type.name} for semester in semesters]
+        return jsonify(result)
 
 
 
