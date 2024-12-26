@@ -1,23 +1,27 @@
 from io import BytesIO
-
 import openpyxl
-
 from app import db, app, dao
 from app.dao import get_summary_report, get_subjects, get_semesters, get_school_years
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
     Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User, Semester, SchoolYear
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
-from flask_admin import Admin, BaseView, expose
 from flask import redirect, url_for, flash, request, Response, render_template, make_response, send_file, jsonify
 
 
-admin = Admin(app, name='StudentManagement', template_mode='bootstrap4')
+class MyAdminIndexView(AdminIndexView):
+    @expose("/")
+    def index(self):
+
+        return self.render('admin/index.html')
+
+admin = Admin(app=app, name='Student Management', template_mode='bootstrap4', index_view=MyAdminIndexView())
+
 
 class BaseAdminView(ModelView):
     def is_accessible(self):
         if current_user.is_authenticated:
-            return current_user.role.__eq__(Role.ADMIN)
+            return current_user.role == Role.ADMIN
         return False
 
     def inaccessible_callback(self, name, **kwargs):

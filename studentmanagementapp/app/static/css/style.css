@@ -41,6 +41,7 @@ body {
     display: flex;
     flex-direction: column;
     max-height: 90vh;
+    overflow-y: auto;
 }
 
 #sidebar.expand {
@@ -102,15 +103,3 @@ select.form-select {
     position: relative;
 }
 
-.logout-btn {
-    margin-top: 10px !important;
-    background-color: #f44336;
-    color: white;
-    padding: 10px 15px;
-    text-decoration: none;
-    border-radius: 5px;
-}
-
-.logout-btn:hover {
-    background-color: #d32f2f;
-}

@@ -224,8 +224,8 @@ class ScoreType(Enumerate):
     FIFTEEN_MINUTE = 1
     ONE_PERIOD = 2
     EXAM = 3
-    FIRST_TERM_AVERAGE = 1
-    SECOND_TERM_AVERAGE = 2
+    FIRST_TERM_AVERAGE = 6
+    SECOND_TERM_AVERAGE = 12
 
 
 class Score(db.Model):
