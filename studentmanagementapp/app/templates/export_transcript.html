@@ -1,0 +1,39 @@
+<html>
+<head>
+    <title>Bảng điểm theo năm học - {school_year_name}</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bảng điểm theo năm học - {school_year_name}</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Họ tên</th>
+                <th>Lớp</th>
+                <th>Môn học</th>
+                <th>ĐTB HK1</th>
+                <th>ĐTB HK2</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in results %}
+            <tr>
+                <td>{{ row.student_name }}</td>
+                <td>{{ row.classroom_name }}</td>
+                <td>{{ row.subject_name }}</td>
+                <td>{{ row.avg_hk1 }}</td>
+                <td>{{ row.avg_hk2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

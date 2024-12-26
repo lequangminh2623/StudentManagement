@@ -1,4 +1,4 @@
-from sqlalchemy import func
+from sqlalchemy import func, case
 from app.models import *
 import hashlib
 
@@ -198,7 +198,7 @@ def get_summary_report(subject_id, semester_id):
         .join(Classroom, Classroom.id == Transcript.classroom_id) \
         .filter(Transcript.curriculum.has(subject_id=subject_id), Transcript.semester_id == semester_id) \
         .group_by(Classroom.classroom_name) \
-        .all()
 
-    return query
+
+    return query.all()
 

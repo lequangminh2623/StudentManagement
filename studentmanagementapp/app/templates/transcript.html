@@ -6,10 +6,9 @@
      <div class="container mt-4">
         <div class="row">
             {% for transcript in transcript_data %}
-            <div class="col-md-6 mb-4">
-                <form id="form-{{ transcript.transcript_id }}" method="GET" action="/transcripts/{{ transcript.transcript_id }}">
-                    <input type="hidden" name="transcript_id" value="{{ transcript.transcript_id }}">
-                    <div class="card" ondblclick="document.getElementById('form-{{ transcript.transcript_id }}').submit();">
+            <div class="col-md-6 mb-4 ">
+                <a href="/transcripts/{{ transcript.transcript_id }}" style="text-decoration: None" class="card-link">
+                    <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">{{ transcript.classroom_name }} - {{ transcript.subject_name }}</h5>
                             <p class="card-text">
@@ -19,7 +18,7 @@
                             </p>
                         </div>
                     </div>
-                </form>
+                </a>
             </div>
             {% endfor %}
         </div>
