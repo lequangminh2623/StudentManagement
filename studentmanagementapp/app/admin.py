@@ -186,7 +186,7 @@ class BangDiemHocKy(BaseView):
         # Lấy dữ liệu báo cáo nếu có đủ thông tin
         report_data = (
             get_summary_report(subject_id=selected_subject_id, semester_id=selected_semester_id)
-            if selected_subject_id and selected_semester_id else None
+            if selected_subject_id and selected_semester_id else []
         )
 
         # Truyền giá trị đã chọn xuống template
