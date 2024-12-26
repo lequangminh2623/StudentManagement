@@ -63,13 +63,15 @@ def upgrade():
     """)
 
     op.execute("""
-    CREATE TRIGGER update_student_number_after_delete
-    AFTER DELETE ON classroom_transfer
+    CREATE TRIGGER update_student_number_after_classroom_change
+    AFTER UPDATE ON classroom_transfer
     FOR EACH ROW
     BEGIN
-        UPDATE classroom
-        SET student_number = student_number - 1
-        WHERE id = OLD.classroom_id;
+        IF OLD.changed_classroom = FALSE AND NEW.changed_classroom = TRUE THEN
+            UPDATE classroom
+            SET student_number = student_number - 1
+            WHERE id = OLD.classroom_id;
+        END IF;
     END;
     """)
 
@@ -373,7 +375,7 @@ def downgrade():
     op.execute("""DROP TRIGGER IF EXISTS check_grade_insert;""")
     op.execute("""DROP TRIGGER IF EXISTS check_grade_delete;""")
     op.execute("""DROP TRIGGER IF EXISTS check_max_student;""")
-    op.execute("""DROP TRIGGER IF EXISTS update_student_number_after_delete;""")
+    op.execute("""DROP TRIGGER IF EXISTS update_student_number_after_classroom_change;""")
     op.execute("""DROP TRIGGER IF EXISTS check_semester_delete;""")
     op.execute("""DROP TRIGGER IF EXISTS check_min_classroom;""")
     op.execute("""DROP TRIGGER IF EXISTS check_score_delete;""")
