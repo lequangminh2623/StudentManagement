@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<table class="table table-bordered">
+    <thead>
+    <tr>
+        <th rowspan="2">STT</th>
+        <th rowspan="2">Name</th>
+        <th colspan="5">15-minute Score</th>
+        <th colspan="3">One-Period Score</th>
+        <th rowspan="2">Exam Score</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for student in transcript %}
+    <tr>
+        <td class="text-center">{{ loop.index }}</td>
+        <td>
+            {{ student.student_name }}
+        </td>
+        {% for i in range(5) %}
+        <td>
+            <input type="number" class="form-control"
+                   name="{{ student.student_id }}-{{student.FIFTEEN_MINUTE[i].score_id if i < student.FIFTEEN_MINUTE|length else 'new'}}-FIFTEEN_MINUTE-{{ i+1 }}"
+                   value="{{ student.FIFTEEN_MINUTE[i].score if i < student.FIFTEEN_MINUTE|length else '' }}"
+                   min="0" max="10" step="0.1">
+        </td>
+        {% endfor %}
+        {% for i in range(3) %}
+        <td>
+            <input type="number" class="form-control"
+                   name="{{ student.student_id }}-{{student.ONE_PERIOD[i].score_id if i < student.ONE_PERIOD|length else 'new'}}-ONE_PERIOD-{{ i+1 }}"
+                   value="{{ student.ONE_PERIOD[i].score if i < student.ONE_PERIOD|length else '' }}"
+                   min="0" max="10" step="0.1">
+        </td>
+        {% endfor %}
+        <td>
+            <input type="number" class="form-control"
+                   name="{{ student.student_id }}-{{student.EXAM[0].score_id if student.EXAM|length > 0 else 'new'}}-EXAM-1"
+                   value="{{ student.EXAM[0].score if student.EXAM|length > 0 else '' }}"
+                   min="0" max="10" step="0.1">
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>
