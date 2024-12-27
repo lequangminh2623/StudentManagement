@@ -1,3 +1,5 @@
+import hashlib
+
 from flask import render_template, request, url_for, session, redirect, jsonify
 from sqlalchemy.testing import db
 
@@ -215,3 +217,125 @@ def common_response():
     return {
         'Role': Role,
     }
+
+@app.route("/send-otp", methods=["GET", "POST"])
+@login_required
+def send_otp():
+    if request.method == "GET":
+        return render_template("send-otp.html")  # Hiển thị trang gửi/nhập OTP
+
+    # Phân biệt hành động (Gửi OTP hoặc Xác minh OTP)
+    action = request.form.get("action")
+
+    if action == "send":
+        # Tạo và gửi OTP
+        otp_code = str(random.randint(100000, 999999))  # Tạo OTP ngẫu nhiên
+        expiration_time = datetime.now() + timedelta(minutes=5)  # Hết hạn sau 5 phút
+        expiration_time_str = expiration_time.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Lưu OTP vào session
+        session['otp'] = otp_code
+        session['otp_expiration'] = expiration_time_str
+
+        user = current_user
+        email = None
+
+        # Lấy email dựa trên vai trò người dùng
+        if user.role == Role.TEACHER:
+            teacher_info = TeacherInfo.query.filter_by(user_id=user.id).first()
+            if teacher_info and teacher_info.email:
+                email = teacher_info.email
+        elif user.role == Role.STAFF:
+            staff_info = StaffInfo.query.filter_by(user_id=user.id).first()
+            if staff_info and staff_info.email:
+                email = staff_info.email
+        elif user.role == Role.ADMIN:
+            admin_info = AdminInfo.query.filter_by(user_id=user.id).first()
+            if admin_info and admin_info.email:
+                email = admin_info.email
+        elif user.role == Role.STUDENT:
+            student_info = StudentInfo.query.filter_by(user_id=user.id).first()
+            if student_info and student_info.email:
+                email = student_info.email
+
+        if not email:
+            return render_template("send-otp.html", error="Không tìm thấy email liên kết với người dùng này.")
+
+        # Gửi OTP qua email
+        try:
+            subject = "Mã OTP của bạn"
+            body = f"Mã OTP của bạn là: {otp_code}\nMã sẽ hết hạn vào {expiration_time_str}."
+            msg = Message(subject, sender=app.config['MAIL_USERNAME'], recipients=[email])
+            msg.body = body
+            mail.send(msg)
+            return render_template("send-otp.html", message="Mã OTP đã được gửi đến email của bạn.")
+        except Exception as e:
+            print(f"Lỗi khi gửi OTP: {e}")
+            return render_template("send-otp.html", error="Không thể gửi mã OTP. Vui lòng thử lại sau.")
+
+    elif action == "verify":
+        # Xác minh OTP
+        otp_input = request.form.get("otp")  # Lấy OTP từ form
+        otp_code = session.get("otp")
+        otp_expiration = session.get("otp_expiration")
+
+        # Kiểm tra lỗi
+        if not otp_code or not otp_expiration:
+            error_message = "Không tìm thấy mã OTP. Vui lòng thử lại."
+            return render_template("send-otp.html", error=error_message)
+
+        if otp_input != otp_code:
+            error_message = "Mã OTP không chính xác."
+            return render_template("send-otp.html", error=error_message)
+
+        if datetime.now() > datetime.strptime(otp_expiration, "%Y-%m-%d %H:%M:%S"):
+            error_message = "Mã OTP đã hết hạn."
+            return render_template("send-otp.html", error=error_message)
+
+        if otp_input == otp_code and datetime.now() <= datetime.strptime(otp_expiration, "%Y-%m-%d %H:%M:%S"):
+            # OTP hợp lệ, đánh dấu xác thực thành công
+            session['otp_verified'] = True
+            # Xóa OTP khỏi session
+            session.pop("otp", None)
+            session.pop("otp_expiration", None)
+            return redirect(url_for("change_password"))
+        else:
+            return render_template("send-otp.html", error="Mã OTP không chính xác hoặc đã hết hạn.")
+
+    # Nếu không phải hành động hợp lệ, trả về lỗi
+    return render_template("send-otp.html", error="Hành động không được hỗ trợ.")
+
+
+
+# Route để xác thực OTP và đổi mật khẩu
+@app.route("/change-password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    # Kiểm tra xem OTP đã được xác thực chưa
+    if not session.get('otp_verified'):
+        # Nếu chưa xác thực OTP, chuyển hướng về trang gửi OTP
+        return redirect(url_for("send_otp"))
+
+    if request.method == "GET":
+        return render_template("change_password.html")
+
+    # Xử lý POST request
+    new_password = request.form.get("new_password")
+    confirm_password = request.form.get("confirm_password")
+
+    if not new_password or not confirm_password:
+        return render_template("change_password.html", error="Vui lòng nhập đầy đủ thông tin.")
+
+    if new_password != confirm_password:
+        return render_template("change_password.html", error="Mật khẩu không khớp. Vui lòng thử lại.")
+
+    # Cập nhật mật khẩu trong cơ sở dữ liệu
+    hashed_password = hashlib.md5(new_password.strip().encode('utf-8')).hexdigest()
+    user = current_user
+    user.password = hashed_password
+    db.session.commit()
+
+    # Xóa trạng thái xác thực OTP
+    session.pop('otp_verified', None)
+
+    return redirect(url_for("login_process"))

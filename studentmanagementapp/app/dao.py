@@ -299,7 +299,6 @@ def get_summary_report(subject_id, semester_id):
 
 def get_students_by_classroom(classroom_id):
     try:
-        # Truy vấn danh sách tên học sinh qua ApplicationForm
         students = db.session.query(StudentInfo).join(
             ClassroomTransfer, ClassroomTransfer.student_info_id == StudentInfo.id
         ).filter(
@@ -337,17 +336,6 @@ def get_classroom_and_student_count(classroom_id):
 def get_student_info_by_id(student_info_id):
     return db.session.query(StudentInfo).filter(StudentInfo.id == student_info_id).first()
 
-def delete_student_by_id(student_info_id):
-    # Tìm học sinh theo ID
-    student = StudentInfo.query.get(student_info_id)
-    if student:
-        # Xóa học sinh khỏi cơ sở dữ liệu
-        db.session.delete(student)
-        db.session.commit()
-        return {"success": True, "message": "Xóa học sinh thành công"}
-    else:
-        return {"success": False, "message": "Không tìm thấy học sinh"}
-
 
 def get_classrooms_id_by_school_year_name_and_classroom_name(school_year_name, classroom_name):
     classroom = (db.session.query(Classroom).join(
@@ -365,30 +353,21 @@ def get_classrooms_id_by_school_year_name_and_classroom_name(school_year_name, c
 
 def change_student_classroom(student_id, classroom_id):
     try:
-        classroom_transfer = ClassroomTransfer.query.filter(
-            ClassroomTransfer.student_info_id == student_id,
-            ClassroomTransfer.changed_classroom == False
-        ).first()
-
-        if classroom_transfer:
-            classroom_transfer.changed_classroom = True
+        classroom_transfer = ClassroomTransfer.query.filter(ClassroomTransfer.student_info_id==student_id,
+                                                           ClassroomTransfer.changed_classroom==False).first()
+        classroom_transfer.changed_classroom = True
 
         new_classroom_transfer = ClassroomTransfer(
             classroom_id=classroom_id,
             student_info_id=student_id,
         )
 
-        # Thêm bản ghi mới vào cơ sở dữ liệu
         db.session.add(new_classroom_transfer)
         db.session.commit()
-
         return True
-
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        print(f"Error: {e}")
         return False
-
 
 
 def get_classroom_in_same_grade(classroom_id):

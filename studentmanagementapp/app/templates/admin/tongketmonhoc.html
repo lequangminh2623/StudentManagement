@@ -157,10 +157,10 @@
     let tenlop = [], siso = [], soLuongHSPass = [], tyLe = []
 
     {%for i in report_data %}
-    tenlop.push('{{ i[0] }}');
-    siso.push({{i[1]}});
-    soLuongHSPass.push({{i[2]}});
-    tyLe.push({{i[3]}});
+        tenlop.push('{{ i[0] }}');
+        siso.push({{i[1]}});
+        soLuongHSPass.push({{i[2]}});
+        tyLe.push({{i[3]}});
     {%endfor%}
 
     const ctx = document.getElementById('tyLeDau');
