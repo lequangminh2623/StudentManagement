@@ -156,12 +156,14 @@
     });
     let tenlop = [], siso = [], soLuongHSPass = [], tyLe = []
 
-    {%for i in report_data %}
-        tenlop.push('{{ i[0] }}');
-        siso.push({{i[1]}});
-        soLuongHSPass.push({{i[2]}});
-        tyLe.push({{i[3]}});
-    {%endfor%}
+    {% if report_data %}
+        {%for i in report_data %}
+            tenlop.push('{{ i[0] }}');
+            siso.push({{i[1]}});
+            soLuongHSPass.push({{i[2]}});
+            tyLe.push({{i[3]}});
+        {%endfor%}
+    {% endif %}
 
     const ctx = document.getElementById('tyLeDau');
     new Chart(ctx, {
