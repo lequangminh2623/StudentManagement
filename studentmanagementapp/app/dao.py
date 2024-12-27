@@ -218,9 +218,16 @@ def get_semesters(school_year_id=None):
 def get_school_years():
     return SchoolYear.query.all()
 
-def get_summary_report(subject_id, semester_id):
+def get_summary_report(subject_id=None, semester_id=None):
     # Lấy thông tin semester để biết school_year_id
     semester = Semester.query.filter_by(id=semester_id).first()
+
+    #Lấy min_value của Rule
+    rule = Rule.query.get(9)
+    if rule:
+        min_value = rule.min_value
+    else:
+        min_value = None
 
     if not semester:
         return []  # Không có semester phù hợp
@@ -278,13 +285,13 @@ def get_summary_report(subject_id, semester_id):
         Classroom.student_number.label('total_students'),  # Số học sinh trong lớp
         func.sum(
             case(
-                (total_avg_score >= 5, 1),  # Đối với các học sinh đạt >= 5
+                (total_avg_score >= min_value, 1),  # Đối với các học sinh đạt >= 5
                 else_=0
             )
         ).label('passed_students'),  # Số học sinh đạt
         (func.sum(
             case(
-                (total_avg_score >= 5, 1),
+                (total_avg_score >= min_value, 1),
                 else_=0
             )) / Classroom.student_number * 100).label('pass_rate')  # Tỷ lệ đạt
     ).join(
