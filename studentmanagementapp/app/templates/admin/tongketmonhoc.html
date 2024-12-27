@@ -7,7 +7,7 @@
             <div class="col-md-4">
                 <label for="subject" class="form-label">Môn:</label>
                 <select id="subject" name="subject_id" class="form-select">
-                    <option value="">Chọn môn</option> <!-- Option mặc định -->
+                    <option value="">Chọn môn</option>
                     {% for subject in subjects %}
                     <option value="{{ subject.id }}"
                             {% if subject.id|string== selected_subject_id|string %}selected{% endif %}>
@@ -20,7 +20,7 @@
             <div class="col-md-4">
                 <label for="school_year" class="form-label">Năm học:</label>
                 <select id="school_year" name="school_year_id" class="form-select" onchange="fetchSemesters()">
-                    <option value="">Chọn năm học</option> <!-- Option mặc định -->
+                    <option value="">Chọn năm học</option>
                     {% for school_year in school_years %}
                     <option value="{{ school_year.id }}"
                             {% if school_year.id|string== selected_school_year_id|string %}selected{% endif %}>
@@ -35,8 +35,7 @@
                 <select name="semester_id" id="semester_id" class="form-select">
                     <option value="">Chọn học kỳ</option>
                     {% for semester in semesters %}
-                    <option value="{{ semester.id }}" {% if semester.id|string== selected_semester_id|string
-                            %}selected{% endif %}>
+                    <option value="{{ semester.id }}" {% if semester.id== selected_semester_id %}selected{% endif %}>
                         {{ semester.semester_type.name }}
                     </option>
                     {% endfor %}
@@ -48,6 +47,14 @@
         </div>
     </form>
     {% if report_data %}
+    <div class="mt-4 alert alert-info">
+        <h5>Thông tin báo cáo</h5>
+        <p>
+            <strong>Môn học:</strong> {{ selected_subject.subject_name if selected_subject else "Không xác định" }}<br>
+            <strong>Năm học:</strong> {{ selected_school_year.school_year_name if selected_school_year else "Không xác định" }}<br>
+            <strong>Học kỳ:</strong> {{ selected_semester.semester_type.name if selected_semester else "Không xác định" }}
+        </p>
+    </div>
     <table class="table table-bordered mt-4">
         <thead>
         <tr>
@@ -70,17 +77,18 @@
         {% endfor %}
         </tbody>
     </table>
+
+    <div class="col-md-12 col-xs-12">
+        <h4 class="text-center">Sơ đồ thống kê</h4>
+        <canvas id="tyLeDau"></canvas>
+        <canvas id="siSoLop" style="margin-top: 50px"></canvas>
+    </div>
     {% endif %}
 </div>
-<div class="col-md-12 col-xs-12">
-    <h4 class="text-center">Sơ đồ thống kê</h4>
-    <canvas id="tyLeDau"></canvas>
-    <canvas id="siSoLop"></canvas>
-</div>
+
 
 <style>
     .form-select {
-        --bs-form-select-bg-img: url(data:image/svg+xml,%3csvg xmlns= 'http://www.w3.org/2000/svg' viewBox= '0 0 16 16' %3e%3cpath fill= 'none' stroke= '%23343a40' stroke-linecap= 'round' stroke-linejoin= 'round' stroke-width= '2' d= 'm2 5 6 6 6-6' /%3e%3c/svg%3e);
         display: block;
         width: 100%;
         padding: .375rem 2.25rem .375rem .75rem;
@@ -102,19 +110,21 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+
     function fetchSemesters() {
         const schoolYearId = document.getElementById('school_year').value;
         const semesterDropdown = document.getElementById('semester_id');
 
-        // Clear the existing options
-        semesterDropdown.innerHTML = '<option value="">Chọn học kỳ</option>';
 
         if (!schoolYearId) {
+            semesterDropdown.innerHTML = '<option value="">Chọn học kỳ</option>';
             return;
         }
 
+        semesterDropdown.innerHTML = '<option value="">Chọn học kỳ</option>';
+
         // Gửi request đến server
-        fetch('/admin/get_semesters/', {
+        fetch('/admin/bangdiemhocky/get_semesters', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -141,16 +151,24 @@
             });
     }
 
+    // Gọi hàm fetchSemesters khi trang được load (nếu đã chọn năm học)
+    document.addEventListener('DOMContentLoaded', function () {
+        const schoolYearSelect = document.getElementById('school_year');
+        if (schoolYearSelect.value) {
+            fetchSemesters();
+        }
+    });
+
     let tenlop = [], siso = [], soLuongHSPass = [], tyLe = []
 
-    {% for r in report_data %}
-        tenlop.push({{ r[0] }})
-        siso.push( {{ r[1] }} )
-        soLuongHSPass.push( {{ r[2] }} )
-        tyLe.push( {{ r[3] }} )
-    {% endfor %}
+    {%for i in report_data %}
+    tenlop.push('{{ i[0] }}');
+    siso.push({{i[1]}});
+    soLuongHSPass.push({{i[2]}});
+    tyLe.push({{i[3]}});
+    {%endfor%}
 
-    const ctx = document.getElementById('tiLeDau');
+    const ctx = document.getElementById('tyLeDau');
     new Chart(ctx, {
         type: 'line',
         data: {
@@ -210,7 +228,6 @@
             }
         }
     });
-
 </script>
 {% endblock %}
 
