@@ -106,7 +106,8 @@ def get_students_and_scores_by_transcript_id(transcript_id):
     ).join(
         ClassroomTransfer, ClassroomTransfer.student_info_id == StudentInfo.id
     ).filter(
-        ClassroomTransfer.classroom_id == transcript.classroom_id
+        ClassroomTransfer.classroom_id == transcript.classroom_id,
+        ClassroomTransfer.changed_classroom == False
     ).all()
 
     student_scores = {}
@@ -135,7 +136,6 @@ def update_score(score_id, new_value):
     score = Score.query.get(score_id)
     if score:
         score.score_number = new_value
-        db.session.commit()
         return True
     return False
 
@@ -144,7 +144,6 @@ def delete_score(score_id):
     score = Score.query.get(score_id)
     if score:
         db.session.delete(score)
-        db.session.commit()
         return True
     return False
 
@@ -157,8 +156,14 @@ def create_score(student_info_id, transcript_id, score_type, score_value):
         transcript_id=transcript_id
     )
     db.session.add(new_score)
-    db.session.commit()
+
     return new_score.id
+
+def commit():
+    db.session.commit()
+
+def rollback():
+    db.session.rollback()
 
 def get_transcript_avg(transcript_id):
     transcript = Transcript.query.get(transcript_id)

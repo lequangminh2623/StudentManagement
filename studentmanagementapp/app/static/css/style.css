@@ -23,6 +23,8 @@ body {
 
 .wrapper {
     display: flex;
+    flex: 1;
+    min-height: 100vh;
 }
 
 .container {
@@ -30,6 +32,7 @@ body {
     width: 100%;
     transition: all 0.35s ease-in-out;
     background-color: #eef0f3;
+
 }
 
 #sidebar {

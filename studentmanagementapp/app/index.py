@@ -70,9 +70,11 @@ def logout():
 @app.route("/transcripts", methods=['get', 'post'])
 @login_required
 def transcript_process():
-    filters = None
-    transcript_data = None
-    if current_user.role == Role.TEACHER:
+    filters = []
+    transcript_data = []
+    if current_user.role != Role.TEACHER:
+        session['errors'] = ["Unauthorized"]
+    else:
         teacher_info = dao.get_teacher(current_user.id)
         school_year = dao.get_current_school_year()
         semesters = [
@@ -107,21 +109,30 @@ def transcript_process():
 @app.route('/transcripts/<int:transcript_id>', methods=['GET', 'POST'])
 @login_required
 def score_process(transcript_id):
-    if current_user.role == Role.TEACHER:
+    transcript_info = None
+    transcript = None
+    if current_user.role != Role.TEACHER:
+        session['errors'] = ["Unauthorized"]
+
+    else:
         transcript_info = dao.get_transcripts(transcript_id=transcript_id)
         transcript = dao.get_students_and_scores_by_transcript_id(transcript_id)
+        if not transcript or not transcript_info:
+            session['errors'] = ["Can not find any transcript."]
 
         if request.method == 'POST':
-            # Lấy dữ liệu từ form
             form_data = request.form
             updated_scores = []
             new_scores = []
             deleted_scores = []
+            errors = []
 
             for key, value in form_data.items():
                 value = value.strip()
-                student_id, score_id, score_type, index = key.split('-')
-                student_id = int(student_id)
+                student_id_str, score_id_str, score_type, index = key.split('-')
+                student_id = int(student_id_str)
+                score_id = int(score_id_str) if score_id_str != 'new' else 'new'
+
                 score_number = float(value) if value else None
 
                 if score_id == 'new':
@@ -133,54 +144,63 @@ def score_process(transcript_id):
                             'transcript_id': transcript_id
                         })
                 else:
-                    score_id = int(score_id)
                     for student in transcript:
                         if student['student_id'] == student_id:
-                            original_scores = student[score_type]
-                            original_score = next((s for s in original_scores if s['score_id'] == score_id), None)
+                            original_scores = student.get(score_type, [])
+                            original_score = next((s for s in original_scores if s.get('score_id') == score_id), None)
 
                             if original_score:
                                 if score_number is None:
                                     deleted_scores.append(score_id)
-                                elif original_score['score'] != score_number:
+                                elif original_score.get('score') != score_number:
                                     updated_scores.append({
                                         'score_id': score_id,
                                         'score_number': score_number
                                     })
                             break
 
-            for score in new_scores:
-                dao.create_score(
-                    score_value=score['score_number'],
-                    student_info_id=score['student_id'],
-                    transcript_id=score['transcript_id'],
-                    score_type=score['score_type'],
-
-                )
-            for score in updated_scores:
-                dao.update_score(
-                    score_id=score['score_id'],
-                    new_value=score['score_number']
-                )
-            for score_id in deleted_scores:
-                dao.delete_score(score_id)
-
+            if errors:
+                session['errors'] = errors
+            try:
+                for score in new_scores:
+                    dao.create_score(
+                        score_value=score['score_number'],
+                        student_info_id=score['student_id'],
+                        transcript_id=score['transcript_id'],
+                        score_type=score['score_type'],
+                    )
+                for score in updated_scores:
+                    dao.update_score(
+                        score_id=score['score_id'],
+                        new_value=score['score_number']
+                    )
+                for score_id in deleted_scores:
+                    dao.delete_score(score_id)
+                dao.commit()
+                session['messages'] = ["Successfully Updated!"]
+            except Exception as db_error:
+                dao.rollback()
+                session['errors'] = [f"Minimum and maximum score violation: {db_error}"]
             return redirect(url_for('score_process', transcript_id=transcript_id))
 
-        return render_template(
-            'score.html',
-            transcript=transcript,
-            transcript_info=transcript_info,
-            transcript_id=transcript_id
-        )
+    return render_template(
+        'score.html',
+        transcript=transcript,
+        transcript_info=transcript_info,
+        transcript_id=transcript_id
+    )
+
 
 @app.route('/transcripts/<int:transcript_id>/export', methods=['GET', 'POST'])
 @login_required
 def export_transcript(transcript_id):
+    transcript_data = None
+    if current_user.role != Role.TEACHER:
+        session['errors'] = ["Unauthorized"]
     if current_user.role == Role.TEACHER:
         transcript_data = dao.get_transcript_avg(transcript_id)
 
-        return render_template('export_transcript.html', transcript=transcript_data)
+    return render_template('export_transcript.html', transcript=transcript_data)
 
 
 @login.user_loader
