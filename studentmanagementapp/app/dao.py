@@ -309,6 +309,7 @@ def get_students_by_classroom(classroom_id):
         print(f"Error in get_students_by_classroom: {e}")
         return []
 
+
 # Trả về classroom của năm học
 def get_classrooms_by_year_and_grade(school_year_name=None, classroom_name=None):
     classroom = (db.session.query(Classroom).join(
@@ -358,4 +359,22 @@ def get_classrooms_id_by_school_year_name_and_classroom_name(school_year_name, c
         return classroom.id
     else:
         return None
+
+def change_student_classroom(student_id):
+    query  = ClassroomTransfer.query.filter(ClassroomTransfer.student_info_id == student_id,
+                                            ClassroomTransfer.changed_classroom == False)
+    return query(ClassroomTransfer.id).first()
+
+def get_classroom_in_same_grade(classroom_id):
+    same_grade_classrooms = (
+        db.session.query(Classroom)
+        .join(Grade, Classroom.grade_id == Grade.id)
+        .filter(
+            Classroom.grade_id == db.session.query(Classroom.grade_id).filter_by(id=classroom_id).scalar(),
+            Classroom.id != classroom_id
+        )
+        .all()
+    )
+    return [{"id": c.id, "name": c.classroom_name} for c in same_grade_classrooms]
+
 

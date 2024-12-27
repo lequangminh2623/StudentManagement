@@ -104,7 +104,7 @@ class LogoutView(AuthenticatedView):
     @expose('/')
     def __index__(self):
         logout_user()
-        return redirect('/admin')
+        return redirect('/login')
 
 class BangDiemHocKy(BaseView):
     @expose('/get_semesters', methods=['POST'])
@@ -180,34 +180,24 @@ class Students(BaseStaffView):
     def __index__(self):
         school_year = dao.get_current_school_year()
         classrooms = dao.get_classrooms_by_year_and_grade(school_year.school_year_name)
-        print(classrooms)
-        filter = [
-            {"label": "Classroom", "id": "classroom", "data": classrooms}
-        ]
-        return self.render('admin/students.html', filters=filter)
+        filter = {"label": "Classroom", "id": "classroom", "data": classrooms}
+        return self.render('admin/students.html', filter=filter)
 
     @expose('/delete_student', methods=['POST'])
     def delete_student(self):
         data = request.get_json()
         student_id = data.get('student_id')
+        print(student_id)
 
         if not student_id:
             return jsonify({"success": False, "message": "Thiếu student_id."}), 400
 
-        # Tìm học sinh trong cơ sở dữ liệu
-        student = StudentInfo.query.get(student_id)
-        if not student:
+        student_id = StudentInfo.query.get(student_id)
+
+        if not student_id:
             return jsonify({"success": False, "message": "Không tìm thấy học sinh."}), 404
 
-        try:
-            # Xóa học sinh khỏi cơ sở dữ liệu
-            ClassroomTransfer.query.filter_by(student_info_id=student_id).delete()
-            db.session.delete(student)
-            db.session.commit()
-            return jsonify({"success": True, "message": "Xóa học sinh thành công."}), 200
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({"success": False, "message": f"Lỗi khi xóa: {str(e)}"}), 500
+
 
     @expose('/students_in_classroom', methods=['GET', 'POST'])
     def students_in_classroom(self):
@@ -220,6 +210,7 @@ class Students(BaseStaffView):
 
             # Lấy danh sách học sinh từ DAO
             students = dao.get_students_by_classroom(classroom_id)
+            classrooms = dao.get_classroom_in_same_grade(classroom_id)
 
             if not students:
                 return jsonify({"error": "Không tìm thấy học sinh nào cho lớp học này"}), 404
@@ -243,7 +234,8 @@ class Students(BaseStaffView):
 
             return jsonify({
                 "students": students_data,
-                "total_students": total_students
+                "total_students": total_students,
+                "classrooms": classrooms
             }), 200
         except Exception as e:
             print(f"Error: {e}")
@@ -255,16 +247,9 @@ class Students(BaseStaffView):
             data = request.json
             school_year = dao.get_current_school_year()
             school_year_name = school_year.school_year_name
-
             classroom_name = data.get("classroom_name")
-
-            print(school_year_name)
-            print(classroom_name)
-
             classroom_id = dao.get_classrooms_id_by_school_year_name_and_classroom_name(school_year_name,
                                                                                         classroom_name)
-
-            print(classroom_id)
             if classroom_id:
                 return jsonify({"classroom_id": classroom_id})
             else:
