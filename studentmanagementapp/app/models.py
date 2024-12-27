@@ -12,7 +12,6 @@ class Role(Enumerate):
     ADMIN = 1
     STAFF = 2
     TEACHER = 3
-    STUDENT = 4
 
 
 class User(db.Model, UserMixin):
@@ -21,7 +20,7 @@ class User(db.Model, UserMixin):
     password = Column(String(100), nullable=False)
     avatar = Column(String(255),
                     default='https://res.cloudinary.com/dqw4mc8dg/image/upload/w_1000,c_fill,ar_1:1,g_auto,r_max,bo_5px_solid_red,b_rgb:262c35/v1733391370/aj6sc6isvelwkotlo1vw.png')
-    role = Column(Enum(Role), default=Role.STUDENT)
+    role = Column(Enum(Role), default=Role.TEACHER)
 
 
     def __str__(self):
@@ -33,7 +32,7 @@ class Gender(Enumerate):
     FEMALE = 0
 
 
-class UserInfo(db.Model):
+class PersonalInfo(db.Model):
     __abstract__ = True
 
     @declared_attr
@@ -64,29 +63,26 @@ class UserInfo(db.Model):
     def status(cls):
         return Column(Boolean, nullable=False)
 
-    @declared_attr
-    def user_id(cls):
-        return Column(Integer, ForeignKey(User.id, ondelete='SET NULL'), unique=True)
-
 
     def __str__(self):
         return self.name
 
 
-class AdminInfo(UserInfo):
+class AdminInfo(PersonalInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user = relationship(User, backref="admin_info", lazy=True)
+    user_id = Column(ForeignKey(User.id, ondelete='SET NULL'), nullable=True)
 
 
-class StaffInfo(UserInfo):
+class StaffInfo(PersonalInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user = relationship(User, backref="staff_info", lazy=True)
+    user_id = Column(ForeignKey(User.id, ondelete='SET NULL'), nullable=True)
 
-
-class TeacherInfo(UserInfo):
+class TeacherInfo(PersonalInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user = relationship(User, backref="teacher_info", lazy=True)
-
+    user_id = Column(ForeignKey(User.id, ondelete='SET NULL'), nullable=True)
 
 class SchoolYear(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -170,11 +166,10 @@ class ApplicationForm(db.Model):
         return self.name
 
 
-class StudentInfo(UserInfo):
+class StudentInfo(PersonalInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
     application_form_id = Column(Integer, ForeignKey(ApplicationForm.id, ondelete='SET NULL'), unique=True)
     application_form = relationship(ApplicationForm, lazy=True)
-    user = relationship("User", backref="student_info", lazy=True)
 
 
 class Subject(db.Model):
@@ -280,11 +275,6 @@ def create_student_info_on_accepted(mapper, connection, target):
             email=target.email,
             birthday=target.birthday,
             status=True,
-            user=User(
-                username=target.email,
-                password=hashed_password,
-                role=Role.STUDENT
-            ),
             application_form=target
         )
         db.session.add(student_info)
