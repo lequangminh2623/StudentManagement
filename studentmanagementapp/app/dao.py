@@ -301,9 +301,10 @@ def get_students_by_classroom(classroom_id):
     try:
         # Truy vấn danh sách tên học sinh qua ApplicationForm
         students = db.session.query(StudentInfo).join(
-            ClassroomTransfer, ClassroomTransfer.id == StudentInfo.application_form_id
+            ClassroomTransfer, ClassroomTransfer.student_info_id == StudentInfo.id
         ).filter(
-            ClassroomTransfer.classroom_id == classroom_id
+            ClassroomTransfer.classroom_id == classroom_id,
+            ClassroomTransfer.changed_classroom == False
         ).all()
 
         return students
@@ -364,21 +365,30 @@ def get_classrooms_id_by_school_year_name_and_classroom_name(school_year_name, c
 
 def change_student_classroom(student_id, classroom_id):
     try:
-        classroom_tranfer = ClassroomTransfer.query.filter(ClassroomTransfer.student_info_id==student_id,
-                                                           ClassroomTransfer.changed_classroom==False)
-        classroom_tranfer.changed_classroom = True
+        classroom_transfer = ClassroomTransfer.query.filter(
+            ClassroomTransfer.student_info_id == student_id,
+            ClassroomTransfer.changed_classroom == False
+        ).first()
+
+        if classroom_transfer:
+            classroom_transfer.changed_classroom = True
 
         new_classroom_transfer = ClassroomTransfer(
             classroom_id=classroom_id,
             student_info_id=student_id,
         )
 
+        # Thêm bản ghi mới vào cơ sở dữ liệu
         db.session.add(new_classroom_transfer)
         db.session.commit()
+
         return True
-    except Exception:
+
+    except Exception as e:
         db.session.rollback()
+        print(f"Error: {e}")
         return False
+
 
 
 def get_classroom_in_same_grade(classroom_id):

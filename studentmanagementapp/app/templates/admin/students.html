@@ -2,7 +2,7 @@
 
 {% block body %}
 <div id="class-list-container">
-    <h2 class="mt-2 text-center text-danger">DANH SÁCH LỚP</h2>
+    <h2 class="mt-2 text-center text-danger">CLASSROOM LIST</h2>
     <ul class="sidebar-nav">
         <li class="sidebar-item">
             <label for="{{ filter.id }}" class="sidebar-label">
@@ -62,6 +62,8 @@
         printButton.setAttribute('type', 'button');
         document.getElementById('fetch-students-btn')
             .addEventListener('click', function () {
+                const li = document.getElementById('class-change-li');
+                li.style.display = 'none';
 
                 // Kiểm tra nếu đang fetch, không thực hiện hành động tiếp theo
                 if (isFetching) return;
@@ -107,15 +109,17 @@
                                 <td>${student.address}</td>
                                 <td>${student.email}</td>
                                 <td>${student.birthday}</td>
-                                <td><button class="btn btn-danger change-btn" data-student-id="${student.id}" type="button">Chuyển lớp</button></td>
+                                <td><button class="btn btn-danger change-btn" data-student-id="${student.id}" type="button">Change Classroom</button></td>
                             `;
                                     tableBody.appendChild(row);
                                 });
+
                                 const select = document.getElementById('class-change');
+                                select.innerHTML = '';
                                 data.classrooms.forEach(classroom => {
                                     const option = document.createElement('option');
                                     option.setAttribute('data-id', classroom.id);
-                                    option.innerText = `
+                                    option.innerHTML = `
                                             ${classroom.name}
                                     `;
                                     select.appendChild(option);
@@ -165,50 +169,50 @@
     }
 
 
-
     document.addEventListener('click', function (event) {
 
         if (event.target && event.target.classList.contains('change-btn')) {
             const li = document.getElementById('class-change-li');
             li.style.display = 'block';
+            const studentId = event.target.dataset.studentId;
 
-        }
+            window.currentStudentId = studentId;        }
     });
 
     document.addEventListener('click', function (event) {
+    if (event.target && event.target.classList.contains('class-change-btn')) {
+        const li = document.getElementById('class-change-li');
+        li.style.display = 'none';
 
-        if (event.target && event.target.classList.contains('class-change-btn')) {
-            const li = document.getElementById('class-change-li');
-            li.style.display = 'none';
-            const studentId = event.target.dataset.studentId;
+        const studentId = window.currentStudentId;
+        const select = document.getElementById('class-change');
+        const selectedOption = select.options[select.selectedIndex];
+        const classroomId = selectedOption ? selectedOption.dataset.id : null;
 
-            const select = document.getElementById('classroom-select');
-
-            const selectedOption = select.options[select.selectedIndex];
-            const classroomId = selectedOption ? selectedOption.dataset.id : null;
-
-            return fetch('/admin/students/change_student_classroom', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    student_id: studentId,
-                    classroom_id: classroomId
-                })
+        return fetch('/admin/students/change_student_classroom', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                student_id: studentId,
+                classroom_id: classroomId
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
-                    } else {
-                        alert(data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error changing classroom:', error);
-                });
+        })
+        .then(response => {
+            if (response.status === 200) {
+                alert('Classroom successfully changed!');
+            } else if (response.status === 400) {
+                alert('Error: Missing data!');
+            } else if (response.status === 500) {
+                alert('Server error! Could not change classroom.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An unexpected error occurred!');
+        });
+    }
+});
 
-        }
-    });
 </script>
 <style>
     /* Tổng thể sidebar */

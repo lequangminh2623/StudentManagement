@@ -1,6 +1,8 @@
 from io import BytesIO
 import openpyxl
 from flask_admin import AdminIndexView, expose, Admin, BaseView
+from six import print_
+
 from app import db, app, dao
 from app.dao import get_summary_report, get_subjects, get_semesters, get_school_years
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
@@ -186,32 +188,23 @@ class Students(BaseStaffView):
     @expose('/change_student_classroom', methods=['POST'])
     def change_student_classroom(self):
         try:
-            print('hehe')
-            # Lấy dữ liệu JSON từ yêu cầu
             data = request.get_json()
             student_id = data.get('student_id')
             classroom_id = data.get('classroom_id')
-            print(classroom_id)
 
-            # Kiểm tra dữ liệu đầu vào
             if not student_id or not classroom_id:
-                flash('Student ID and Classroom ID are required!')
-                return redirect('/admin/students')
+                return '', 400  # Trả về 400 nếu có lỗi
 
-            # Gọi hàm thay đổi lớp học của học sinh
-            is_success = dao.change_student_classroom(student_id=student_id, classroom_id=classroom_id)
+            # Call the function to change student's classroom
+            is_success = dao.change_student_classroom(student_id, classroom_id)
 
             if is_success:
                 flash('Successfully changed classroom!')
+                return '', 200  # Thành công, trả về mã 200 mà không có dữ liệu
             else:
-                flash('Error changing classroom!')
-
-            return redirect('/admin/students')
-
+                return '', 500  # Lỗi xảy ra khi thay đổi lớp, trả về 500
         except Exception as e:
-            # Nếu có lỗi xảy ra, thông báo lỗi
-            flash(f'An error occurred: {str(e)}')
-            return redirect('/admin/students')
+            return '', 500  # Nếu có lỗi, trả về mã lỗi 500
 
     @expose('/students_in_classroom', methods=['GET', 'POST'])
     def students_in_classroom(self):
