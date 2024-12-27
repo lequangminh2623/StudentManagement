@@ -22,8 +22,11 @@
                         <img src="{{ current_user.avatar }}" width="30" class="rounded-circle" />
                     </a>
                 </li>
+                 <li class="nav-item">
+                    <a class="nav-link text-warning" href="/send-otp" style="margin-top: 2px">Change Password</a>
+                </li>
                 <li class="nav-item">
-                    <a class="nav-link text-danger" href="/logout">Logout</a>
+                    <a class="nav-link text-danger" href="/logout" style="margin-top: 2px">Logout</a>
                 </li>
                 {% else %}
                 <li class="nav-item">
