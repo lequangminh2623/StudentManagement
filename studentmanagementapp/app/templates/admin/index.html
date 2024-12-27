@@ -1,5 +1,84 @@
 {% extends 'admin/master.html' %}
 
 {% block body %}
+<div class="welcome">
+    <div class="welcome-text">
+        <img width="300px" src="https://res.cloudinary.com/dqw4mc8dg/image/upload/v1735099617/pngegg_1_oi2v4u.png" alt="Student">
+        <h4>Welcome To</h4>
+        <h1>Admin page!</h1>
+    </div>
+</div>
+<style>
+div {
+  display: block;
+}
 
+.container {
+    min-width: 100vw;
+    max-width: 100vh;
+    margin: 0;
+    padding:0;
+    overflow: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.welcome {
+  background: linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.6)),url("https://res.cloudinary.com/dqw4mc8dg/image/upload/v1735098593/bg_vcbk0a.jpg");
+  height: 100vh;
+  width: 100%;
+  -webkit-background-size: cover;
+  background-size: cover;
+  background-position: center center;
+  position: relative;
+}
+
+.welcome-text {
+  position: absolute;
+  width: 90%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.welcome-text img {
+  position: absolute;
+  top: 130%;
+  left: 50%;
+  transform: translate(-50%, -130%);
+}
+
+.welcome-text h1,h2,h4 {
+  text-align: center;
+  color: #fff;
+}
+
+.welcome-text h1 {
+  text-transform: uppercase;
+  font-size: 30px;
+}
+
+@media (max-width: 700px) {
+    .welcome-text h1 {
+        font-size: 15px;
+
+    }
+
+    .welcome-text h2,h4 {
+        font-size: 10px;
+    }
+
+    .welcome-text img {
+        width:100px;
+        top: 30%;
+    }
+}
+
+.welcome-text h2 {
+  color: gray;
+}
+
+</style>
 {% endblock %}

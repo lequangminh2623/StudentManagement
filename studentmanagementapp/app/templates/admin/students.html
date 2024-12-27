@@ -4,7 +4,6 @@
 <div id="class-list-container">
     <h2 class="mt-2 text-center text-danger">DANH SÁCH LỚP</h2>
     <ul class="sidebar-nav">
-        {% for filter in filters %}
         <li class="sidebar-item">
             <label for="{{ filter.id }}" class="sidebar-label">
                 <span>{{ filter.label }}</span>
@@ -17,9 +16,16 @@
                 </option>
                 {% endfor %}
             </select>
+            <button id="fetch-students-btn" class="btn btn-outline-info m-3 sidebar-btn" type="submit">Select</button>
         </li>
-        {% endfor %}
-        <button id="fetch-students-btn" class="btn btn-outline-info m-3 sidebar-btn" type="submit">Select</button>
+        <li id="class-change-li" style="display: none;" class="sidebar-item">
+            <label for="class-change" class="sidebar-label">
+                <span>Class to change</span>
+            </label>
+            <select id="class-change" name="class-change" class="form-select w-auto">
+            </select>
+            <button id="class-change-btn" class="btn btn-outline-danger m-3 sidebar-btn" type="submit">Change</button>
+        </li>
     </ul>
     <form id="class-list-form">
         <div class="form-group mt-3 mb-3">
@@ -71,7 +77,7 @@
                         }
 
                         // Gửi yêu cầu lấy danh sách học sinh với classroomId vừa lấy được
-                        fetch('/students_in_classroom', {
+                        fetch('/admin/students/students_in_classroom', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
                             body: JSON.stringify({classroom_id: classroomId})
@@ -105,6 +111,14 @@
                             `;
                                     tableBody.appendChild(row);
                                 });
+                                const select = document.getElementById('class-change');
+                                data.classrooms.forEach(classroom => {
+                                    const option = document.createElement('option');
+                                    option.innerHTML = `
+                                            ${classroom.name}
+                                    `;
+                                    select.appendChild(option);
+                                });
                             })
                             .catch(error => {
                                 console.error('Error fetching students:', error);
@@ -128,7 +142,7 @@
 
         console.log('classroomName:', classroomName);
 
-        return fetch('/get_classroom_id', {
+        return fetch('/admin/students/get_classroom_id', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -152,6 +166,8 @@
     // Hàm xử lý sự kiện xóa trên document
     document.addEventListener('click', function (event) {
         if (event.target && event.target.classList.contains('delete-btn')) {
+            const li = document.getElementById('class-change-li');
+            li.style.display = 'block';
 
             const studentId = event.target.dataset.studentId;
 
@@ -160,18 +176,15 @@
                 return;
             }
 
-            fetch('/delete_student', {
+            fetch('/admin/students/delete_student', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({student_id: studentId})
+                body: JSON.stringify({student_id: studentId}, )
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-
-                        const row = event.target.closest('tr');
-                        row.remove();
 
                     } else {
                         alert(data.message);
@@ -180,6 +193,7 @@
                 .catch(error => {
                     console.error('Error deleting student:', error);
                 });
+
         }
     });
 </script>
