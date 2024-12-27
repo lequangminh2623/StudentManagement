@@ -1,5 +1,4 @@
 from flask import render_template, request, url_for,session, redirect
-
 from app import dao, utils, login, app
 from flask_login import login_user, login_required, logout_user, current_user
 from app.models import Role
@@ -179,8 +178,9 @@ def score_process(transcript_id):
 @login_required
 def export_transcript(transcript_id):
     if current_user.role == Role.TEACHER:
-        results = dao.get_scores_by_transcript_id(transcript_id)
-        return render_template('scores_report.html', results=results)
+        transcript_data = dao.get_transcript_avg(transcript_id)
+
+        return render_template('export_transcript.html', transcript=transcript_data)
 
 
 @login.user_loader

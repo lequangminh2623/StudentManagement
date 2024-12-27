@@ -1,5 +1,7 @@
+
 from flask_sqlalchemy import query
 from sqlalchemy import func, case, literal
+
 from app.models import *
 import hashlib
 
@@ -158,6 +160,43 @@ def create_score(student_info_id, transcript_id, score_type, score_value):
     db.session.commit()
     return new_score.id
 
+def get_transcript_avg(transcript_id):
+    transcript = Transcript.query.get(transcript_id)
+    if not transcript:
+        return None  # Hoặc xử lý lỗi tùy theo ứng dụng
+
+    school_year_name = transcript.semester.school_year.school_year_name
+    classroom_name = transcript.classroom.classroom_name
+
+    student_scores = db.session.query(
+        StudentInfo.name,
+        Semester.semester_type,
+        func.avg(Score.score_number).label('average_score')
+    ).join(Score, Score.student_info_id == StudentInfo.id)\
+    .join(Transcript, Transcript.id == Score.transcript_id)\
+    .join(Semester, Semester.id == Transcript.semester_id)\
+    .filter(Transcript.classroom_id == transcript.classroom_id)\
+    .group_by(StudentInfo.name, Semester.semester_type)\
+    .all()
+
+    result = []
+    for student_name, semester_type, average_score in student_scores:
+        student_data = next((item for item in result if item['student_info_name'] == student_name), None)
+        if not student_data:
+            student_data = {'student_info_name': student_name, 'average_score_semester_1': None, 'average_score_semester_2': None}
+            result.append(student_data)
+
+        if semester_type == SemesterType.FIRST_TERM:
+            student_data['average_score_semester_1'] = round(average_score, 1)
+        elif semester_type == SemesterType.SECOND_TERM:
+            student_data['average_score_semester_2'] = round(average_score, 1)
+
+    final_result = {
+        'school_year_name': school_year_name,
+        'classroom_name': classroom_name,
+        'student_scores': result
+    }
+    return final_result
 
 def diem_stats(semester_id=None, subject_id=None):
     # Trọng số cho từng loại điểm

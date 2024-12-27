@@ -138,7 +138,6 @@ def generate_data():
                     student_info_id=student.id,
                     classroom_id=classroom.id,
                     transfer_date=date.today(),
-                    is_classroom_change=False
                 )
                 db.session.add(transfer)
                 db.session.commit()
