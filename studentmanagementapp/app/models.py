@@ -241,7 +241,7 @@ class Score(db.Model):
 
 class ClassroomTransfer(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    is_classroom_change = Column(Boolean, nullable=False, default=False)
+    changed_classroom = Column(Boolean, nullable=False, default=False)
     transfer_date = Column(Date, nullable=False, default=date.today)
     classroom_id = Column(Integer, ForeignKey(Classroom.id, ondelete='RESTRICT'), nullable=False)
     classroom = relationship(Classroom, backref='classroom_transfers', lazy=True)

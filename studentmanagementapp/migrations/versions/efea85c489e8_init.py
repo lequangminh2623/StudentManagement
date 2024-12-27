@@ -165,7 +165,7 @@ def upgrade():
     )
     op.create_table('classroom_transfer',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-    sa.Column('is_classroom_change', sa.Boolean(), nullable=False),
+    sa.Column('changed_classroom', sa.Boolean(), nullable=False),
     sa.Column('transfer_date', sa.Date(), nullable=False),
     sa.Column('classroom_id', sa.Integer(), nullable=False),
     sa.Column('student_info_id', sa.Integer(), nullable=False),
