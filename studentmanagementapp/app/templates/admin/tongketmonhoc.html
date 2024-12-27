@@ -77,7 +77,6 @@
         {% endfor %}
         </tbody>
     </table>
-
     <div class="col-md-12 col-xs-12">
         <h4 class="text-center">Sơ đồ thống kê</h4>
         <canvas id="tyLeDau"></canvas>
@@ -85,7 +84,6 @@
     </div>
     {% endif %}
 </div>
-
 
 <style>
     .form-select {
@@ -110,7 +108,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-
     function fetchSemesters() {
         const schoolYearId = document.getElementById('school_year').value;
         const semesterDropdown = document.getElementById('semester_id');
@@ -122,7 +119,6 @@
         }
 
         semesterDropdown.innerHTML = '<option value="">Chọn học kỳ</option>';
-
         // Gửi request đến server
         fetch('/admin/bangdiemhocky/get_semesters', {
             method: 'POST',
@@ -158,7 +154,6 @@
             fetchSemesters();
         }
     });
-
     let tenlop = [], siso = [], soLuongHSPass = [], tyLe = []
 
     {%for i in report_data %}
@@ -230,5 +225,3 @@
     });
 </script>
 {% endblock %}
-
-

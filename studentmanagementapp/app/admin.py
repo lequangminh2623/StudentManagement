@@ -106,105 +106,60 @@ class LogoutView(AuthenticatedView):
         logout_user()
         return redirect('/login')
 
-class PhoDiem(BaseAdminView):
+class BangDiemHocKy(BaseView):
+    @expose('/get_semesters', methods=['POST'])
+    def get_semesters_by_school_year(self):
+        school_year_id = request.json.get('school_year_id')  # Lấy id năm học
+        if not school_year_id:
+            return jsonify({'error': 'Missing school_year_id'}), 400
+        # Lọc danh sách học kỳ dựa trên id năm học
+        semesters = Semester.query.filter_by(school_year_id=school_year_id).all()
+        result = [
+            {'id': semester.id, 'name': semester.semester_type.name}  # Trả về id và tên học kỳ
+            for semester in semesters
+        ]
+        return jsonify(result)
     @expose('/', methods=['GET', 'POST'])
-    def __index__(self):
-        semesters = Semester.query.join(SchoolYear).all()
-        subjects = Subject.query.all()
+    def index(self, **kwargs):
+        subjects = get_subjects()
+        school_years = get_school_years()
+        report_data = []
+        selected_subject_id = None
+        selected_school_year_id = None
+        selected_semester_id = None
+        semesters = []
 
-        stats = []
-        selected_semester_id = None  # Học kỳ được chọn
-        selected_subject_id = None  # Môn học được chọn
-        selected_subject_name = ""  # Tên môn học được chọn
+        # Thêm biến chứa tên các giá trị được chọn
+        selected_subject = None
+        selected_school_year = None
+        selected_semester = None
 
         if request.method == 'POST':
-            selected_semester_id = request.form.get('semester_id')
             selected_subject_id = request.form.get('subject_id')
+            selected_school_year_id = request.form.get('school_year_id')
+            selected_semester_id = request.form.get('semester_id')
 
-            # Filter scores based on the selected semester and subject
-            stats = dao.diem_stats(semester_id=selected_semester_id, subject_id=selected_subject_id)
+            # Truy vấn danh sách các học kỳ của năm học đã chọn
+            if selected_school_year_id:
+                semesters = Semester.query.filter_by(school_year_id=selected_school_year_id).all()
 
-            # Lấy tên môn học được chọn
+            # Lọc dữ liệu báo cáo và lấy thông tin các trường đã chọn
             if selected_subject_id:
-                subject = Subject.query.get(selected_subject_id)
-                if subject:
-                    selected_subject_name = subject.subject_name
+                selected_subject = Subject.query.filter_by(id=selected_subject_id).first()
 
-        return self.render('admin/phodiem.html',
-                           stats=stats,
-                           semesters=semesters,
-                           subjects=subjects,
-                           selected_semester_id=selected_semester_id,
-                           selected_subject_id=selected_subject_id,
-                           selected_subject_name=selected_subject_name)
+            if selected_school_year_id:
+                selected_school_year = SchoolYear.query.filter_by(id=selected_school_year_id).first()
 
+            if selected_semester_id:
+                selected_semester = Semester.query.filter_by(id=selected_semester_id).first()
 
-    @expose('/export-excel', methods=['POST'])
-    def export_excel(self):
-        semester_id = request.form.get('semester_id')
-        subject_id = request.form.get('subject_id')
+            # Nếu có đủ dữ liệu đầu vào, lấy dữ liệu báo cáo
+            if selected_subject_id and selected_semester_id:
+                report_data = get_summary_report(
+                    subject_id=selected_subject_id,
+                    semester_id=selected_semester_id
+                )
 
-        # Lấy thông tin học kỳ và môn học từ database
-        semester = Semester.query.get(semester_id)
-        subject = Subject.query.get(subject_id)
-
-        # Lấy dữ liệu điểm thống kê
-        stats = dao.diem_stats(semester_id=semester_id, subject_id=subject_id)
-
-        # Tạo workbook Excel
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Thống kê điểm"
-
-        # Thêm thông tin Học kỳ và Môn học
-        ws.append(["Học kỳ:", f"{semester.school_year.school_year_name} - {semester.semester_type.name}"])
-        ws.append(["Môn học:", subject.subject_name])
-        ws.append([])  # Dòng trống
-
-        # Thêm tiêu đề cột
-        ws.append(["Điểm", "Số lượng"])
-
-        # Thêm dữ liệu thống kê
-        for stat in stats:
-            ws.append([stat[0], stat[1]])
-
-        # Lưu workbook vào buffer
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-
-        # Trả file Excel về client
-        response = Response(output, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        response.headers["Content-Disposition"] = "attachment; filename=thong_ke_diem.xlsx"
-        return response
-
-class BangDiemHocKy(BaseAdminView):
-    @expose('/', methods=['GET', 'POST'])
-    def __index__(self):
-        from app.dao import get_subjects, get_school_years, get_summary_report
-
-        # Lấy dữ liệu cho dropdown
-        subjects = get_subjects()  # Tất cả môn học
-        school_years = get_school_years()  # Tất cả năm học
-
-        # Lấy thông tin từ URL
-        selected_subject_id = request.args.get('subject_id')
-        selected_school_year_id = request.args.get('school_year_id')
-        selected_semester_id = request.args.get('semester_id')
-
-        # Lấy danh sách học kỳ tương ứng với năm học được chọn
-        semesters = (
-            Semester.query.filter_by(school_year_id=selected_school_year_id).all()
-            if selected_school_year_id else []
-        )
-
-        # Lấy dữ liệu báo cáo nếu có đủ thông tin
-        report_data = (
-            get_summary_report(subject_id=selected_subject_id, semester_id=selected_semester_id)
-            if selected_subject_id and selected_semester_id else []
-        )
-
-        # Truyền giá trị đã chọn xuống template
         return self.render(
             'admin/tongketmonhoc.html',
             subjects=subjects,
@@ -213,17 +168,12 @@ class BangDiemHocKy(BaseAdminView):
             report_data=report_data,
             selected_subject_id=selected_subject_id,
             selected_school_year_id=selected_school_year_id,
-            selected_semester_id=selected_semester_id
+            selected_semester_id=selected_semester_id,
+            # Truyền các giá trị đã chọn
+            selected_subject=selected_subject,
+            selected_school_year=selected_school_year,
+            selected_semester=selected_semester
         )
-    @expose('/get_semesters', methods=['POST'])
-    def get_semesters_by_school_year(self):
-        school_year_id = request.json.get('school_year_id')
-        if not school_year_id:
-            return jsonify({'error': 'Missing school_year_id'}), 400
-
-        semesters = Semester.query.filter_by(school_year_id=school_year_id).all()
-        result = [{'id': semester.id, 'name': semester.semester_type.name} for semester in semesters]
-        return jsonify(result)
 
 class Students(BaseStaffView):
     @expose('/', methods=['GET', 'POST'])
@@ -315,7 +265,6 @@ admin.add_view(StudentInfoView(StudentInfo, db.session))
 admin.add_view(RuleView(Rule, db.session))
 admin.add_view(SubjectView(Subject, db.session))
 admin.add_view(BaseAdminModelView(User, db.session))
-admin.add_view(PhoDiem(name='Phổ điểm', category="Stats"))
-admin.add_view(BangDiemHocKy(name='Bảng điểm', category="Stats"))
+admin.add_view(BangDiemHocKy(name='Bảng điểm'))
 admin.add_view(Students(name='Students'))
 admin.add_view(LogoutView(name='Logout'))

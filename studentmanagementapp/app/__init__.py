@@ -6,6 +6,7 @@ from urllib.parse import quote
 from flask_login import LoginManager
 from dotenv import load_dotenv
 import os
+from flask_mail import Mail
 
 load_dotenv()
 
@@ -33,3 +34,13 @@ cloudinary.config(
     secure=True
 )
 
+# Cấu hình Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')  # Lấy email từ biến môi trường
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')  # Lấy mật khẩu từ biến môi trường
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
+
+mail = Mail(app)

@@ -200,47 +200,98 @@ def get_transcript_avg(transcript_id):
     }
     return final_result
 
-def diem_stats(semester_id=None, subject_id=None):
-    query = db.session.query(
-        Score.score_number.label('score'),
-        func.count(Score.student_info_id).label('student_count')
-    ).join(Transcript, Transcript.id == Score.transcript_id) \
-     .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
-     .join(Semester, Semester.id == Transcript.semester_id)
-
-    if semester_id:
-        query = query.filter(Semester.id == semester_id)
-
-    if subject_id:
-        query = query.filter(Curriculum.subject_id == subject_id)
-
-    return query.group_by(Score.score_number).order_by(Score.score_number.asc()).all()
-
-
 def get_user_by_id(user_id):
     return User.query.get(user_id)
 
 def get_subjects():
     return Subject.query.all()
 
-def get_semesters():
-    return db.session.query(Semester.semester_type).distinct().all()
+def get_semesters(school_year_id=None):
+    query = db.session.query(Semester.semester_type).distinct() \
+        .join(SchoolYear, SchoolYear.id == Semester.school_year_id)
+    if school_year_id:
+        query = query.filter(SchoolYear.id == school_year_id)
+    return query.all()
 
 def get_school_years():
     return SchoolYear.query.all()
 
 def get_summary_report(subject_id, semester_id):
-    query = db.session.query(
-        Classroom.classroom_name.label('classroom_name'),
-        func.count(Score.student_info_id).label('total_students'),
-        func.sum(case((Score.score_number >= 5, 1), else_=0)).label('passed_students'),
-        (func.sum(case((Score.score_number >= 5, 1), else_=0)) / func.count(Score.student_info_id) * 100).label(
-            'pass_rate')
+    # Lấy thông tin semester để biết school_year_id
+    semester = Semester.query.filter_by(id=semester_id).first()
+
+    if not semester:
+        return []  # Không có semester phù hợp
+
+    school_year_id = semester.school_year_id
+
+    # Trọng số cho từng loại điểm
+    SCORE_WEIGHTS = {
+        'FIFTEEN_MINUTE': 1,
+        'ONE_PERIOD': 2,
+        'EXAM': 3
+    }
+
+    # Tính điểm trung bình của từng học sinh cho từng loại điểm
+    avg_score_subquery = db.session.query(
+        Score.student_info_id.label('student_id'),  # ID học sinh
+        func.avg(
+            case(
+                (Score.score_type == 'FIFTEEN_MINUTE', Score.score_number),
+                else_=None
+            )
+        ).label('avg_fifteen_minute'),  # Trung bình điểm 15 phút
+        func.avg(
+            case(
+                (Score.score_type == 'ONE_PERIOD', Score.score_number),
+                else_=None
+            )
+        ).label('avg_one_period'),  # Trung bình điểm 1 tiết
+        func.avg(
+            case(
+                (Score.score_type == 'EXAM', Score.score_number),
+                else_=None
+            )
+        ).label('avg_exam'),  # Trung bình điểm thi
+        Classroom.id.label('classroom_id')  # ID lớp học
     ).join(Transcript, Transcript.id == Score.transcript_id) \
         .join(Classroom, Classroom.id == Transcript.classroom_id) \
-        .filter(Transcript.curriculum.has(subject_id=subject_id), Transcript.semester_id == semester_id) \
-        .group_by(Classroom.classroom_name) \
+        .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
+        .filter(
+        Transcript.semester_id == semester_id,  # Lọc theo học kỳ
+        Curriculum.subject_id == subject_id  # Lọc theo môn học
+    ) \
+        .group_by(Score.student_info_id, Classroom.id) \
+        .subquery()
 
+    # Tạo cột tính điểm trung bình tổng cho từng học sinh dựa trên trọng số
+    total_avg_score = (
+              (avg_score_subquery.c.avg_fifteen_minute * SCORE_WEIGHTS['FIFTEEN_MINUTE']) +
+              (avg_score_subquery.c.avg_one_period * SCORE_WEIGHTS['ONE_PERIOD']) +
+              (avg_score_subquery.c.avg_exam * SCORE_WEIGHTS['EXAM'])
+      ) / sum(SCORE_WEIGHTS.values())  # Chia cho tổng trọng số
+    # Query chính để tạo báo cáo
+    query = db.session.query(
+        Classroom.classroom_name.label('classroom_name'),  # Tên lớp
+        Classroom.student_number.label('total_students'),  # Số học sinh trong lớp
+        func.sum(
+            case(
+                (total_avg_score >= 5, 1),  # Đối với các học sinh đạt >= 5
+                else_=0
+            )
+        ).label('passed_students'),  # Số học sinh đạt
+        (func.sum(
+            case(
+                (total_avg_score >= 5, 1),
+                else_=0
+            )) / Classroom.student_number * 100).label('pass_rate')  # Tỷ lệ đạt
+    ).join(
+        avg_score_subquery, avg_score_subquery.c.classroom_id == Classroom.id
+    ).join(
+        Grade, Grade.id == Classroom.grade_id
+    ).filter(
+        Grade.school_year_id == school_year_id  # Lọc theo năm học
+    ).group_by(Classroom.id)
 
     return query.all()
 
