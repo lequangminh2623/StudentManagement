@@ -1,3 +1,5 @@
+from winreg import error
+
 from sqlalchemy import func, case, cast
 from app.models import *
 import hashlib
@@ -360,10 +362,24 @@ def get_classrooms_id_by_school_year_name_and_classroom_name(school_year_name, c
     else:
         return None
 
-def change_student_classroom(student_id):
-    query  = ClassroomTransfer.query.filter(ClassroomTransfer.student_info_id == student_id,
-                                            ClassroomTransfer.changed_classroom == False)
-    return query(ClassroomTransfer.id).first()
+def change_student_classroom(student_id, classroom_id):
+    try:
+        classroom_tranfer = ClassroomTransfer.query.filter(ClassroomTransfer.student_info_id==student_id,
+                                                           ClassroomTransfer.changed_classroom==False)
+        classroom_tranfer.changed_classroom = True
+
+        new_classroom_transfer = ClassroomTransfer(
+            classroom_id=classroom_id,
+            student_info_id=student_id,
+        )
+
+        db.session.add(new_classroom_transfer)
+        db.session.commit()
+        return True
+    except Exception:
+        db.session.rollback()
+        return False
+
 
 def get_classroom_in_same_grade(classroom_id):
     same_grade_classrooms = (

@@ -24,7 +24,7 @@
             </label>
             <select id="class-change" name="class-change" class="form-select w-auto">
             </select>
-            <button id="class-change-btn" class="btn btn-outline-danger m-3 sidebar-btn" type="submit">Change</button>
+            <button class="btn btn-outline-danger m-3 sidebar-btn class-change-btn" type="submit">Change</button>
         </li>
     </ul>
     <form id="class-list-form">
@@ -107,14 +107,15 @@
                                 <td>${student.address}</td>
                                 <td>${student.email}</td>
                                 <td>${student.birthday}</td>
-                                <td><button class="btn btn-danger delete-btn" data-student-id="${student.id}">Chuyển lớp</button></td>
+                                <td><button class="btn btn-danger change-btn" data-student-id="${student.id}" type="button">Chuyển lớp</button></td>
                             `;
                                     tableBody.appendChild(row);
                                 });
                                 const select = document.getElementById('class-change');
                                 data.classrooms.forEach(classroom => {
                                     const option = document.createElement('option');
-                                    option.innerHTML = `
+                                    option.setAttribute('data-id', classroom.id);
+                                    option.innerText = `
                                             ${classroom.name}
                                     `;
                                     select.appendChild(option);
@@ -163,35 +164,47 @@
             });
     }
 
-    // Hàm xử lý sự kiện xóa trên document
+
+
     document.addEventListener('click', function (event) {
-        if (event.target && event.target.classList.contains('delete-btn')) {
+
+        if (event.target && event.target.classList.contains('change-btn')) {
             const li = document.getElementById('class-change-li');
             li.style.display = 'block';
 
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+
+        if (event.target && event.target.classList.contains('class-change-btn')) {
+            const li = document.getElementById('class-change-li');
+            li.style.display = 'none';
             const studentId = event.target.dataset.studentId;
 
-            if (!studentId) {
-                alert("Không thể xác định ID học sinh để xóa.");
-                return;
-            }
+            const select = document.getElementById('classroom-select');
 
-            fetch('/admin/students/delete_student', {
+            const selectedOption = select.options[select.selectedIndex];
+            const classroomId = selectedOption ? selectedOption.dataset.id : null;
+
+            return fetch('/admin/students/change_student_classroom', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({student_id: studentId}, )
+                body: JSON.stringify({
+                    student_id: studentId,
+                    classroom_id: classroomId
+                })
             })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-
                     } else {
                         alert(data.message);
                     }
                 })
                 .catch(error => {
-                    console.error('Error deleting student:', error);
+                    console.error('Error changing classroom:', error);
                 });
 
         }

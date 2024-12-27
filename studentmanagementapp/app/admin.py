@@ -183,21 +183,35 @@ class Students(BaseStaffView):
         filter = {"label": "Classroom", "id": "classroom", "data": classrooms}
         return self.render('admin/students.html', filter=filter)
 
-    @expose('/delete_student', methods=['POST'])
-    def delete_student(self):
-        data = request.get_json()
-        student_id = data.get('student_id')
-        print(student_id)
+    @expose('/change_student_classroom', methods=['POST'])
+    def change_student_classroom(self):
+        try:
+            print('hehe')
+            # Lấy dữ liệu JSON từ yêu cầu
+            data = request.get_json()
+            student_id = data.get('student_id')
+            classroom_id = data.get('classroom_id')
+            print(classroom_id)
 
-        if not student_id:
-            return jsonify({"success": False, "message": "Thiếu student_id."}), 400
+            # Kiểm tra dữ liệu đầu vào
+            if not student_id or not classroom_id:
+                flash('Student ID and Classroom ID are required!')
+                return redirect('/admin/students')
 
-        student_id = StudentInfo.query.get(student_id)
+            # Gọi hàm thay đổi lớp học của học sinh
+            is_success = dao.change_student_classroom(student_id=student_id, classroom_id=classroom_id)
 
-        if not student_id:
-            return jsonify({"success": False, "message": "Không tìm thấy học sinh."}), 404
+            if is_success:
+                flash('Successfully changed classroom!')
+            else:
+                flash('Error changing classroom!')
 
+            return redirect('/admin/students')
 
+        except Exception as e:
+            # Nếu có lỗi xảy ra, thông báo lỗi
+            flash(f'An error occurred: {str(e)}')
+            return redirect('/admin/students')
 
     @expose('/students_in_classroom', methods=['GET', 'POST'])
     def students_in_classroom(self):
