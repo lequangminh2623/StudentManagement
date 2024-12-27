@@ -1,8 +1,8 @@
 """init
 
-Revision ID: efea85c489e8
+Revision ID: d45fbd77cf9b
 Revises: 
-Create Date: 2024-12-22 00:00:32.893216
+Create Date: 2024-12-27 21:58:10.897084
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'efea85c489e8'
+revision = 'd45fbd77cf9b'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -58,12 +58,13 @@ def upgrade():
     sa.Column('username', sa.String(length=50), nullable=False),
     sa.Column('password', sa.String(length=100), nullable=False),
     sa.Column('avatar', sa.String(length=255), nullable=True),
-    sa.Column('role', sa.Enum('ADMIN', 'STAFF', 'TEACHER', 'STUDENT', name='role'), nullable=True),
+    sa.Column('role', sa.Enum('ADMIN', 'STAFF', 'TEACHER', name='role'), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('username')
     )
     op.create_table('admin_info',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('gender', sa.Enum('MALE', 'FEMALE', name='gender'), nullable=False),
     sa.Column('phone', sa.String(length=10), nullable=False),
@@ -71,12 +72,10 @@ def upgrade():
     sa.Column('email', sa.String(length=50), nullable=False),
     sa.Column('birthday', sa.Date(), nullable=False),
     sa.Column('status', sa.Boolean(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('phone'),
-    sa.UniqueConstraint('user_id')
+    sa.UniqueConstraint('phone')
     )
     op.create_table('grade',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -96,6 +95,7 @@ def upgrade():
     )
     op.create_table('staff_info',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('gender', sa.Enum('MALE', 'FEMALE', name='gender'), nullable=False),
     sa.Column('phone', sa.String(length=10), nullable=False),
@@ -103,12 +103,10 @@ def upgrade():
     sa.Column('email', sa.String(length=50), nullable=False),
     sa.Column('birthday', sa.Date(), nullable=False),
     sa.Column('status', sa.Boolean(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('phone'),
-    sa.UniqueConstraint('user_id')
+    sa.UniqueConstraint('phone')
     )
     op.create_table('student_info',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -120,17 +118,15 @@ def upgrade():
     sa.Column('email', sa.String(length=50), nullable=False),
     sa.Column('birthday', sa.Date(), nullable=False),
     sa.Column('status', sa.Boolean(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['application_form_id'], ['application_form.id'], ondelete='SET NULL'),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('application_form_id'),
     sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('phone'),
-    sa.UniqueConstraint('user_id')
+    sa.UniqueConstraint('phone')
     )
     op.create_table('teacher_info',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.Column('name', sa.String(length=50), nullable=False),
     sa.Column('gender', sa.Enum('MALE', 'FEMALE', name='gender'), nullable=False),
     sa.Column('phone', sa.String(length=10), nullable=False),
@@ -138,12 +134,10 @@ def upgrade():
     sa.Column('email', sa.String(length=50), nullable=False),
     sa.Column('birthday', sa.Date(), nullable=False),
     sa.Column('status', sa.Boolean(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='SET NULL'),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
-    sa.UniqueConstraint('phone'),
-    sa.UniqueConstraint('user_id')
+    sa.UniqueConstraint('phone')
     )
     op.create_table('classroom',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
@@ -186,7 +180,7 @@ def upgrade():
     sa.ForeignKeyConstraint(['semester_id'], ['semester.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['teacher_info_id'], ['teacher_info.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('classroom_id', 'curriculum_id', 'semester_id', name='uq_classroomid_curriculumid_semesterid'),
+    sa.UniqueConstraint('classroom_id', 'curriculum_id', 'semester_id', name='uq_classroomid_curriculumid_semesterid')
     )
     op.create_table('score',
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
