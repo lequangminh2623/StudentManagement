@@ -272,12 +272,15 @@ def send_otp():
             error_message = "Mã OTP đã hết hạn."
             return render_template("send-otp.html", error=error_message)
 
-        # Xóa OTP khỏi session khi xác nhận thành công
-        session.pop("otp", None)
-        session.pop("otp_expiration", None)
-
-        # Chuyển đến trang đổi mật khẩu
-        return redirect(url_for("change_password"))
+        if otp_input == otp_code and datetime.now() <= datetime.strptime(otp_expiration, "%Y-%m-%d %H:%M:%S"):
+            # OTP hợp lệ, đánh dấu xác thực thành công
+            session['otp_verified'] = True
+            # Xóa OTP khỏi session
+            session.pop("otp", None)
+            session.pop("otp_expiration", None)
+            return redirect(url_for("change_password"))
+        else:
+            return render_template("send-otp.html", error="Mã OTP không chính xác hoặc đã hết hạn.")
 
     # Nếu không phải hành động hợp lệ, trả về lỗi
     return render_template("send-otp.html", error="Hành động không được hỗ trợ.")
@@ -288,10 +291,15 @@ def send_otp():
 @app.route("/change-password", methods=["GET", "POST"])
 @login_required
 def change_password():
-    if request.method == "GET":
-        return render_template("change_password.html")  # Hiển thị form đổi mật khẩu
+    # Kiểm tra xem OTP đã được xác thực chưa
+    if not session.get('otp_verified'):
+        # Nếu chưa xác thực OTP, chuyển hướng về trang gửi OTP
+        return redirect(url_for("send_otp"))
 
-    # Đổi mật khẩu (POST)
+    if request.method == "GET":
+        return render_template("change_password.html")
+
+    # Xử lý POST request
     new_password = request.form.get("new_password")
     confirm_password = request.form.get("confirm_password")
 
@@ -307,4 +315,7 @@ def change_password():
     user.password = hashed_password
     db.session.commit()
 
-    return redirect(url_for("login_process"))  # Chuyển về trang profile sau khi đổi mật khẩu thành công
+    # Xóa trạng thái xác thực OTP
+    session.pop('otp_verified', None)
+
+    return redirect(url_for("login_process"))
