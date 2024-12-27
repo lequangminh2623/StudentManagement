@@ -1,8 +1,4 @@
-from io import BytesIO
-import openpyxl
 from flask_admin import AdminIndexView, expose, Admin, BaseView
-from six import print_
-
 from app import db, app, dao
 from app.dao import get_summary_report, get_subjects, get_semesters, get_school_years
 from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
@@ -63,6 +59,8 @@ class ApplicationView(BaseStaffModelView):
     column_searchable_list = ['name']
     column_default_sort = ('status', True)
 
+    column_editable_list = ['status']
+
 
 class RuleView(BaseAdminModelView):
     column_list = ['id', 'rule_name', 'rule_content']
@@ -108,7 +106,7 @@ class LogoutView(AuthenticatedView):
         logout_user()
         return redirect('/login')
 
-class BangDiemHocKy(BaseView):
+class BangDiemHocKy(BaseAdminView):
     @expose('/get_semesters', methods=['POST'])
     def get_semesters_by_school_year(self):
         school_year_id = request.json.get('school_year_id')  # Lấy id năm học
@@ -265,6 +263,8 @@ class Students(BaseStaffView):
             print(f"Error: {e}")
             return jsonify({"error": "An error occurred"}), 500
 
+
+
 admin.add_view(ClassroomView(Classroom, db.session))
 admin.add_view(ApplicationView(ApplicationForm, db.session))
 admin.add_view(CurriculumView(Curriculum, db.session))
@@ -272,6 +272,6 @@ admin.add_view(StudentInfoView(StudentInfo, db.session))
 admin.add_view(RuleView(Rule, db.session))
 admin.add_view(SubjectView(Subject, db.session))
 admin.add_view(BaseAdminModelView(User, db.session))
-admin.add_view(BangDiemHocKy(name='Bảng điểm'))
+admin.add_view(BangDiemHocKy(name='Stats'))
 admin.add_view(Students(name='Students'))
 admin.add_view(LogoutView(name='Logout'))

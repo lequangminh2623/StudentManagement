@@ -152,14 +152,8 @@ class ApplicationFormStatus(Enumerate):
     REJECTED = 3
 
 
-class ApplicationForm(db.Model):
+class ApplicationForm(PersonalInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(50), nullable=False)
-    gender = Column(Enum(Gender), nullable=False)
-    phone = Column(String(10), unique=True, nullable=False)
-    address = Column(String(100), nullable=False)
-    email = Column(String(50), unique=True, nullable=False)
-    birthday = Column(Date, nullable=False)
     status = Column(Enum(ApplicationFormStatus), default=ApplicationFormStatus.PENDING, nullable=False)
 
     def __str__(self):
