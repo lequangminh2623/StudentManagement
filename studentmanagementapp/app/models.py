@@ -1,6 +1,6 @@
 import hashlib
 from sqlalchemy import Column, Integer, Float, String, ForeignKey, Boolean, Enum, Date, UniqueConstraint, \
-    CheckConstraint
+    CheckConstraint, DateTime
 from sqlalchemy.orm import relationship, declared_attr
 from app import db, app, migrate
 from enum import Enum as Enumerate
@@ -289,7 +289,6 @@ def create_student_info_on_accepted(mapper, connection, target):
         )
         db.session.add(student_info)
         connection.flush()
-
 
 if __name__ == "__main__":
     with app.app_context():

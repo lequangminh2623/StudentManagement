@@ -158,34 +158,6 @@ def create_score(student_info_id, transcript_id, score_type, score_value):
     db.session.commit()
     return new_score.id
 
-
-def diem_stats(semester_id=None, subject_id=None):
-    # Trọng số cho từng loại điểm
-    SCORE_WEIGHTS = {
-        'FIFTEEN_MINUTE': 0.2,
-        'ONE_PERIOD': 0.3,
-        'EXAM': 0.5
-    }
-
-    # Câu truy vấn tính điểm trung bình của từng học sinh
-    avg_score_subquery = db.session.query(
-        Score.student_info_id.label('student_id'),  # ID học sinh
-        func.round(
-            func.sum(
-                case(
-                    (Score.score_type == 'FIFTEEN_MINUTE', Score.score_number * SCORE_WEIGHTS['FIFTEEN_MINUTE']),
-                    (Score.score_type == 'ONE_PERIOD', Score.score_number * SCORE_WEIGHTS['ONE_PERIOD']),
-                    (Score.score_type == 'EXAM', Score.score_number * SCORE_WEIGHTS['EXAM']),
-                    else_=0
-                )
-            ), 1  # Làm tròn đến 1 chữ số thập phân
-        ).label('avg_score')  # Điểm trung bình
-    ).join(Transcript, Transcript.id == Score.transcript_id) \
- \
-        # Nhóm theo mức điểm và sắp xếp tăng dần
-    return query.group_by(Score.score_number).order_by(Score.score_number.asc()).all()
-
-
 def get_user_by_id(user_id):
     return User.query.get(user_id)
 
