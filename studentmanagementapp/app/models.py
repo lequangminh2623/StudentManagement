@@ -61,7 +61,7 @@ class PersonalInfo(db.Model):
 
     @declared_attr
     def status(cls):
-        return Column(Boolean, nullable=False)
+        return Column(Boolean, nullable=False, default=True)
 
 
     def __str__(self):
@@ -146,24 +146,9 @@ class Classroom(db.Model):
         return self.classroom_name
 
 
-class ApplicationFormStatus(Enumerate):
-    PENDING = 1
-    ACCEPTED = 2
-    REJECTED = 3
-
-
-class ApplicationForm(PersonalInfo):
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    status = Column(Enum(ApplicationFormStatus), default=ApplicationFormStatus.PENDING, nullable=False)
-
-    def __str__(self):
-        return self.name
-
 
 class StudentInfo(PersonalInfo):
     id = Column(Integer, primary_key=True, autoincrement=True)
-    application_form_id = Column(Integer, ForeignKey(ApplicationForm.id, ondelete='SET NULL'), unique=True)
-    application_form = relationship(ApplicationForm, lazy=True)
 
 
 class Subject(db.Model):
@@ -255,24 +240,6 @@ class Rule(db.Model):
 
     def __str__(self):
         return self.rule_name
-
-
-@db.event.listens_for(ApplicationForm, 'after_update')
-def create_student_info_on_accepted(mapper, connection, target):
-    if target.status == ApplicationFormStatus.ACCEPTED and not hasattr(target, 'student_info'):
-        hashed_password = str(hashlib.md5('123456'.encode('utf-8')).hexdigest())
-        student_info = StudentInfo(
-            name=target.name,
-            gender=target.gender,
-            phone=target.phone,
-            address=target.address,
-            email=target.email,
-            birthday=target.birthday,
-            status=True,
-            application_form=target
-        )
-        db.session.add(student_info)
-        connection.flush()
 
 
 if __name__ == "__main__":

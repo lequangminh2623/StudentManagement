@@ -1,8 +1,8 @@
 """add triggers
 
-Revision ID: 0c265c105709
-Revises: d45fbd77cf9b
-Create Date: 2024-12-27 21:58:35.800742
+Revision ID: b1117e7189b6
+Revises: 4bf7b4bf2581
+Create Date: 2024-12-28 02:22:32.129758
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0c265c105709'
-down_revision = 'd45fbd77cf9b'
+revision = 'b1117e7189b6'
+down_revision = '4bf7b4bf2581'
 branch_labels = None
 depends_on = None
 

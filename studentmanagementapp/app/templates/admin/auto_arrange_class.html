@@ -1,0 +1,9 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+    <h2>Auto Arrange Classes</h2>
+    <p>Click the button below to automatically arrange classes for the new school year.</p>
+    <form method="POST" action="{{ url_for('autoarrangeclass.arrange') }}">
+        <input type="submit" value="Auto Arrange Classes" class="btn btn-primary">
+    </form>
+{% endblock %}

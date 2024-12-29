@@ -1,11 +1,12 @@
+from datetime import datetime
 import hashlib
-
+import random
+import datetime as dt
 from flask import render_template, request, url_for, session, redirect, jsonify
-from sqlalchemy.testing import db
-
-from app import dao, utils, login, app
+from flask_mail import Message, Mail
+from app import dao, utils, login, app, mail, db
 from flask_login import login_user, login_required, logout_user, current_user
-from app.models import Role, ClassroomTransfer, StudentInfo
+from app.models import Role, ClassroomTransfer, StudentInfo, TeacherInfo, StaffInfo, AdminInfo
 
 
 @app.route("/")
@@ -119,10 +120,15 @@ def score_process(transcript_id):
         session['errors'] = ["Unauthorized"]
 
     else:
+        kw = request.args.get('kw', None)
+
         transcript_info = dao.get_transcripts(transcript_id=transcript_id)
-        transcript = dao.get_students_and_scores_by_transcript_id(transcript_id)
-        if not transcript or not transcript_info:
+        transcript = dao.get_students_and_scores_by_transcript_id(transcript_id=transcript_id, kw=kw)
+        if not transcript_info:
             session['errors'] = ["Can not find any transcript."]
+
+        if not transcript :
+            session['errors'] = ["Can not find any student."]
 
         if request.method == 'POST':
             form_data = request.form
@@ -230,7 +236,7 @@ def send_otp():
     if action == "send":
         # Tạo và gửi OTP
         otp_code = str(random.randint(100000, 999999))  # Tạo OTP ngẫu nhiên
-        expiration_time = datetime.now() + timedelta(minutes=5)  # Hết hạn sau 5 phút
+        expiration_time = datetime.now() + dt.timedelta(minutes=5)  # Hết hạn sau 5 phút
         expiration_time_str = expiration_time.strftime('%Y-%m-%d %H:%M:%S')
 
         # Lưu OTP vào session
@@ -253,10 +259,6 @@ def send_otp():
             admin_info = AdminInfo.query.filter_by(user_id=user.id).first()
             if admin_info and admin_info.email:
                 email = admin_info.email
-        elif user.role == Role.STUDENT:
-            student_info = StudentInfo.query.filter_by(user_id=user.id).first()
-            if student_info and student_info.email:
-                email = student_info.email
 
         if not email:
             return render_template("send-otp.html", error="Không tìm thấy email liên kết với người dùng này.")

@@ -1,3 +1,5 @@
+import random
+from datetime import datetime
 from winreg import error
 
 from sqlalchemy import func, case, cast
@@ -89,12 +91,12 @@ def get_transcripts(transcript_id=None, teacher_info_id=None, school_year_id=Non
         return query.all()
 
 
-def get_students_and_scores_by_transcript_id(transcript_id):
+def get_students_and_scores_by_transcript_id(transcript_id=None, kw=None):
     transcript = Transcript.query.filter_by(id=transcript_id).first()
     if not transcript:
         return []
 
-    students = db.session.query(
+    students_query = db.session.query(
         StudentInfo.id.label('student_id'),
         StudentInfo.name.label('student_name'),
         Score.score_number.label('score'),
@@ -107,7 +109,12 @@ def get_students_and_scores_by_transcript_id(transcript_id):
     ).filter(
         ClassroomTransfer.classroom_id == transcript.classroom_id,
         ClassroomTransfer.changed_classroom == False
-    ).all()
+    )
+
+    if kw:
+        students_query = students_query.filter(StudentInfo.name.contains(kw))
+
+    students = students_query.all()
 
     student_scores = {}
     for student in students:
@@ -221,6 +228,7 @@ def get_school_years():
 def get_summary_report(subject_id=None, semester_id=None):
     # Lấy thông tin semester để biết school_year_id
     semester = Semester.query.filter_by(id=semester_id).first()
+    school_year_id = semester.school_year_id
 
     #Lấy min_value của Rule
     rule = Rule.query.get(9)
@@ -230,88 +238,92 @@ def get_summary_report(subject_id=None, semester_id=None):
         min_value = None
 
     if not semester:
-        return []  # Không có semester phù hợp
+        return []
 
-    school_year_id = semester.school_year_id
 
-    # Trọng số cho từng loại điểm
+    # Trọng số
     SCORE_WEIGHTS = {
         'FIFTEEN_MINUTE': 1,
         'ONE_PERIOD': 2,
         'EXAM': 3
     }
 
-    # Tính điểm trung bình của từng học sinh cho từng loại điểm
+
     avg_score_subquery = db.session.query(
-        Score.student_info_id.label('student_id'),  # ID học sinh
+        Score.student_info_id.label('student_id'),
         func.avg(
             case(
                 (Score.score_type == 'FIFTEEN_MINUTE', Score.score_number),
                 else_=None
             )
-        ).label('avg_fifteen_minute'),  # Trung bình điểm 15 phút
+        ).label('avg_fifteen_minute'),
         func.avg(
             case(
                 (Score.score_type == 'ONE_PERIOD', Score.score_number),
                 else_=None
             )
-        ).label('avg_one_period'),  # Trung bình điểm 1 tiết
+        ).label('avg_one_period'),
         func.avg(
             case(
                 (Score.score_type == 'EXAM', Score.score_number),
                 else_=None
             )
-        ).label('avg_exam'),  # Trung bình điểm thi
-        Classroom.id.label('classroom_id')  # ID lớp học
+        ).label('avg_exam'),
+        Classroom.id.label('classroom_id')
     ).join(Transcript, Transcript.id == Score.transcript_id) \
         .join(Classroom, Classroom.id == Transcript.classroom_id) \
         .join(Curriculum, Curriculum.id == Transcript.curriculum_id) \
         .filter(
-        Transcript.semester_id == semester_id,  # Lọc theo học kỳ
-        Curriculum.subject_id == subject_id  # Lọc theo môn học
+        Transcript.semester_id == semester_id,
+        Curriculum.subject_id == subject_id
     ) \
         .group_by(Score.student_info_id, Classroom.id) \
         .subquery()
 
-    # Tạo cột tính điểm trung bình tổng cho từng học sinh dựa trên trọng số
+
     total_avg_score = (
               (avg_score_subquery.c.avg_fifteen_minute * SCORE_WEIGHTS['FIFTEEN_MINUTE']) +
               (avg_score_subquery.c.avg_one_period * SCORE_WEIGHTS['ONE_PERIOD']) +
               (avg_score_subquery.c.avg_exam * SCORE_WEIGHTS['EXAM'])
-      ) / sum(SCORE_WEIGHTS.values())  # Chia cho tổng trọng số
+      ) / sum(SCORE_WEIGHTS.values())
     # Query chính để tạo báo cáo
     query = db.session.query(
         Classroom.classroom_name.label('classroom_name'),  # Tên lớp
         Classroom.student_number.label('total_students'),  # Số học sinh trong lớp
         func.sum(
             case(
-                (total_avg_score >= min_value, 1),  # Đối với các học sinh đạt >= 5
+                (total_avg_score >= min_value, 1),
                 else_=0
             )
-        ).label('passed_students'),  # Số học sinh đạt
+        ).label('passed_students'),
         (func.sum(
             case(
                 (total_avg_score >= min_value, 1),
                 else_=0
-            )) / Classroom.student_number * 100).label('pass_rate')  # Tỷ lệ đạt
+            )) / Classroom.student_number * 100).label('pass_rate')
     ).join(
         avg_score_subquery, avg_score_subquery.c.classroom_id == Classroom.id
     ).join(
         Grade, Grade.id == Classroom.grade_id
     ).filter(
-        Grade.school_year_id == school_year_id  # Lọc theo năm học
+        Grade.school_year_id == school_year_id
     ).group_by(Classroom.id)
 
     return query.all()
 
-def get_students_by_classroom(classroom_id):
+def get_students_by_classroom(classroom_id, kw):
     try:
-        students = db.session.query(StudentInfo).join(
+        students_query = db.session.query(StudentInfo).join(
             ClassroomTransfer, ClassroomTransfer.student_info_id == StudentInfo.id
         ).filter(
             ClassroomTransfer.classroom_id == classroom_id,
             ClassroomTransfer.changed_classroom == False
-        ).all()
+        )
+
+        if kw:
+            students_query = students_query.filter(StudentInfo.name.contains(kw))
+
+        students = students_query.all()
 
         return students
     except Exception as e:
@@ -352,7 +364,7 @@ def get_classrooms_id_by_school_year_name_and_classroom_name(school_year_name, c
     .filter(
         SchoolYear.school_year_name == school_year_name,
         Classroom.classroom_name == classroom_name
-    ).first())  # Dùng first() để lấy 1 lớp đầu tiên nếu tìm thấy
+    ).first())
     if classroom:
         return classroom.id
     else:
@@ -388,5 +400,96 @@ def get_classroom_in_same_grade(classroom_id):
         .all()
     )
     return [{"id": c.id, "name": c.classroom_name} for c in same_grade_classrooms]
+
+def check_student_age(birthday):
+    age_rule = Rule.query.filter_by(id=1).first()
+    if age_rule:
+        today = date.today()
+        student_age = today.year - birthday.year - ((today.month, today.day) < (birthday.month, birthday.day))
+        if not age_rule.min_value <= student_age <= age_rule.max_value:
+            return False
+    return True
+
+
+def auto_arrange_classes():
+    current_year = datetime.now().year
+    school_year_name = f"{current_year}-{current_year + 1}"
+
+    # Tạo năm học mới
+    new_school_year = SchoolYear(school_year_name=school_year_name)
+    db.session.add(new_school_year)
+    db.session.flush()
+
+    # Tạo 2 học kỳ cho năm học mới
+    for semester_type in SemesterType:
+        new_semester = Semester(semester_type=semester_type, school_year=new_school_year)
+        db.session.add(new_semester)
+
+    # Tạo 3 khối lớp (10, 11, 12)
+    for grade_type in GradeType:
+        new_grade = Grade(grade_type=grade_type, school_year=new_school_year)
+        db.session.add(new_grade)
+        db.session.flush()
+
+        # Tạo lớp học dựa trên số lượng học sinh chưa có lớp
+        students_without_class = db.session.query(StudentInfo).outerjoin(
+            ClassroomTransfer,
+            (ClassroomTransfer.student_info_id == StudentInfo.id) &
+            (ClassroomTransfer.changed_classroom == False)
+        ).filter(ClassroomTransfer.id == None).count()
+
+        max_students_rule = Rule.query.filter_by(id=4).first()
+        if max_students_rule:
+            max_students_per_classroom = max_students_rule.max_value
+        else:
+            max_students_per_classroom = 40
+
+        num_classrooms = (students_without_class + max_students_per_classroom - 1) // max_students_per_classroom# Tạo lớp với sĩ số tối đa 40
+        for i in range(num_classrooms):
+            classroom_name = f"{grade_type.value}A{i + 1}"
+            new_classroom = Classroom(classroom_name=classroom_name, grade=new_grade, student_number=0)
+            db.session.add(new_classroom)
+
+        # Tạo chương trình học tương ứng với từng khối
+        for subject in Subject.query.all():
+            new_curriculum = Curriculum(grade=new_grade, subject=subject)
+            db.session.add(new_curriculum)
+
+    db.session.flush()
+
+    # Tạo bảng điểm cho tất cả các lớp
+    all_teachers = TeacherInfo.query.all()
+    for classroom in Classroom.query.filter(Classroom.grade.has(school_year=new_school_year)).all():
+        for semester in new_school_year.semesters:
+            for curriculum in classroom.grade.curriculums:
+                random_teacher = random.choice(all_teachers)
+                new_transcript = Transcript(
+                    classroom=classroom,
+                    curriculum=curriculum,
+                    semester=semester,
+                    teacher_info=random_teacher,
+                )
+                db.session.add(new_transcript)
+
+    students_without_class = db.session.query(StudentInfo).outerjoin(
+        ClassroomTransfer,
+        (ClassroomTransfer.student_info_id == StudentInfo.id) &
+        (ClassroomTransfer.changed_classroom == False)
+    ).filter(ClassroomTransfer.id == None).all()
+
+    new_classrooms = Classroom.query.filter(Classroom.grade.has(school_year=new_school_year)).all()
+    for student in students_without_class:
+        if new_classrooms:
+            classroom = min(new_classrooms, key=lambda x: x.student_number)
+            new_transfer = ClassroomTransfer(
+                student_info=student,
+                classroom=classroom,
+                changed_classroom=False
+            )
+            db.session.add(new_transfer)
+
+
+    db.session.commit()
+    return new_school_year
 
 

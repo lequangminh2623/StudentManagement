@@ -27,11 +27,16 @@
             <button class="btn btn-outline-danger m-3 sidebar-btn class-change-btn" type="submit">Change</button>
         </li>
     </ul>
+            <form class="d-flex" action="/admin/students" method="get">
+                <input class="form-control me-2" name="kw" type="text" placeholder="Search" value="{{ kw }}">
+                <button class="btn btn-primary" type="submit">Search</button>
+            </form>
     <form id="class-list-form">
         <div class="form-group mt-3 mb-3">
             <label for="total-students">Student Number:</label>
             <input id="total-students" type="text" disabled>
         </div>
+
         <table class="table table-hover table-bordered text-center">
             <thead class="table-dark">
             <tr>
@@ -176,38 +181,38 @@
     });
 
     document.addEventListener('click', function (event) {
-    if (event.target && event.target.classList.contains('class-change-btn')) {
-        const li = document.getElementById('class-change-li');
-        li.style.display = 'none';
+        if (event.target && event.target.classList.contains('class-change-btn')) {
+            const li = document.getElementById('class-change-li');
+            li.style.display = 'none';
 
-        const studentId = window.currentStudentId;
-        const select = document.getElementById('class-change');
-        const selectedOption = select.options[select.selectedIndex];
-        const classroomId = selectedOption ? selectedOption.dataset.id : null;
+            const studentId = window.currentStudentId;
+            const select = document.getElementById('class-change');
+            const selectedOption = select.options[select.selectedIndex];
+            const classroomId = selectedOption ? selectedOption.dataset.id : null;
 
-        return fetch('/admin/students/change_student_classroom', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                student_id: studentId,
-                classroom_id: classroomId
+            return fetch('/admin/students/change_student_classroom', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    student_id: studentId,
+                    classroom_id: classroomId
+                })
             })
-        })
-        .then(response => {
-            if (response.status === 200) {
-                alert('Classroom successfully changed!');
-            } else if (response.status === 400) {
-                alert('Error: Missing data!');
-            } else if (response.status === 500) {
-                alert('Server error! Could not change classroom.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An unexpected error occurred!');
-        });
-    }
-});
+                .then(response => {
+                    if (response.status === 200) {
+                        alert('Classroom successfully changed!');
+                    } else if (response.status === 400) {
+                        alert('Error: Missing data!');
+                    } else if (response.status === 500) {
+                        alert('Server error! Could not change classroom.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An unexpected error occurred!');
+                });
+        }
+    });
 
 </script>
 <style>
@@ -281,6 +286,7 @@
     .sidebar-btn {
         margin-left: auto; /* Đảm bảo nút luôn ở bên phải */
     }
+
     /* Padding trên cùng cho sidebar */
     .mt-2 {
         margin-top: 20px !important;

@@ -25,9 +25,9 @@
 {% if session.errors %}
 <div class="alert alert-danger text-center">
     <ul>
-    {% for msg in session.errors %}
+        {% for msg in session.errors %}
         <li>{{ msg }}</li>
-    {% endfor %}
+        {% endfor %}
     </ul>
 </div>
 {% set _ = session.pop('errors', None) %}
@@ -35,9 +35,9 @@
 {% if session.messages %}
 <div class="alert alert-success text-center">
     <ul>
-    {% for msg in session.messages %}
+        {% for msg in session.messages %}
         <li>{{ msg }}</li>
-    {% endfor %}
+        {% endfor %}
     </ul>
 </div>
 {% set _ = session.pop('messages', None) %}
@@ -45,6 +45,7 @@
 <div class="table-responsive container">
     <div class="container mt-4">
         <h1 class="mb-4 text-center">Transcript</h1>
+
         <div class="mb-3r">
             {% if transcript_info %}
             <div class="row">
@@ -59,7 +60,13 @@
             </div>
             {% endif %}
         </div>
-        <button class="btn btn-warning m-3 float-end" id="export-button" data-transcript-id="{{ transcript_id }}">Export</button>
+        <form class="d-flex" action="/transcripts/{{ transcript_id }}" method="get">
+            <input class="form-control me-2" name="kw" type="text" placeholder="Search" value="{{ kw }}">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+        <button class="btn btn-warning m-3 float-end" id="export-button" data-transcript-id="{{ transcript_id }}">
+            Export
+        </button>
         <form method="POST" action="{{ url_for('score_process', transcript_id=transcript_id) }}">
             <button type="submit" class="btn btn-primary m-3 float-end">Save Scores</button>
             <table class="table table-bordered">
@@ -74,34 +81,36 @@
                 </thead>
                 <tbody>
                 {% if transcript %}
-                    {% for student in transcript %}
-                    <tr>
-                        <td class="text-center">{{ loop.index }}</td>
-                        <td>
-                            {{ student.student_name }}
-                        </td>
-                        {% for i in range(5) %}
-                        <td>
-                            <input type="number" class="form-control"
-                                   name="{{ student.student_id }}-{{student.FIFTEEN_MINUTE[i].score_id if i < student.FIFTEEN_MINUTE|length else 'new'}}-FIFTEEN_MINUTE-{{ i+1 }}"
-                                   value="{{ student.FIFTEEN_MINUTE[i].score if i < student.FIFTEEN_MINUTE|length else '' }}"
-                                   min="0" max="10" step="0.1">
-                        </td>
-                        {% endfor %}
-                        {% for i in range(3) %}
-                        <td>
-                            <input type="number" class="form-control" name="{{ student.student_id }}-{{student.ONE_PERIOD[i].score_id if i < student.ONE_PERIOD|length else 'new'}}-ONE_PERIOD-{{ i+1 }}"
-                                   value="{{ student.ONE_PERIOD[i].score if i < student.ONE_PERIOD|length else '' }}"
-                                   min="0" max="10" step="0.1">
-                        </td>
-                        {% endfor %}
-                        <td>
-                            <input type="number" class="form-control" name="{{ student.student_id }}-{{student.EXAM[0].score_id if student.EXAM|length > 0 else 'new'}}-EXAM-1"
-                                   value="{{ student.EXAM[0].score if student.EXAM|length > 0 else '' }}"
-                                   min="0" max="10" step="0.1">
-                        </td>
-                    </tr>
+                {% for student in transcript %}
+                <tr>
+                    <td class="text-center">{{ loop.index }}</td>
+                    <td>
+                        {{ student.student_name }}
+                    </td>
+                    {% for i in range(5) %}
+                    <td>
+                        <input type="number" class="form-control"
+                               name="{{ student.student_id }}-{{student.FIFTEEN_MINUTE[i].score_id if i < student.FIFTEEN_MINUTE|length else 'new'}}-FIFTEEN_MINUTE-{{ i+1 }}"
+                               value="{{ student.FIFTEEN_MINUTE[i].score if i < student.FIFTEEN_MINUTE|length else '' }}"
+                               min="0" max="10" step="0.1">
+                    </td>
                     {% endfor %}
+                    {% for i in range(3) %}
+                    <td>
+                        <input type="number" class="form-control"
+                               name="{{ student.student_id }}-{{student.ONE_PERIOD[i].score_id if i < student.ONE_PERIOD|length else 'new'}}-ONE_PERIOD-{{ i+1 }}"
+                               value="{{ student.ONE_PERIOD[i].score if i < student.ONE_PERIOD|length else '' }}"
+                               min="0" max="10" step="0.1">
+                    </td>
+                    {% endfor %}
+                    <td>
+                        <input type="number" class="form-control"
+                               name="{{ student.student_id }}-{{student.EXAM[0].score_id if student.EXAM|length > 0 else 'new'}}-EXAM-1"
+                               value="{{ student.EXAM[0].score if student.EXAM|length > 0 else '' }}"
+                               min="0" max="10" step="0.1">
+                    </td>
+                </tr>
+                {% endfor %}
                 {% endif %}
                 </tbody>
             </table>

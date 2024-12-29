@@ -2,7 +2,7 @@ import hashlib
 
 from app import db, app
 from app.admin import admin
-from app.models import (SchoolYear, Semester, Grade, StudentInfo, ApplicationForm,
+from app.models import (SchoolYear, Semester, Grade, StudentInfo,
                         Subject, Curriculum, Transcript, Score, ClassroomTransfer, TeacherInfo,
                         ScoreType, Classroom, Gender, User, StaffInfo, Role, AdminInfo, Rule)
 from faker import Faker
@@ -105,28 +105,13 @@ def generate_data():
             student_count = random.randint(35, 40)  # 35-40 học sinh mỗi lớp
             for _ in range(student_count):
                 # Tạo ApplicationForm trước
-                app_form = ApplicationForm(
+                student = StudentInfo(
                     name=fake.name(),
                     gender=random.choice([Gender.MALE, Gender.FEMALE]),
                     phone=fake.unique.phone_number()[:10],
                     address=fake.address(),
                     email=fake.unique.email(),
                     birthday=fake.date_of_birth(minimum_age=15, maximum_age=20),
-                    status="ACCEPTED"
-                )
-                db.session.add(app_form)
-                db.session.commit()
-
-                # Tạo StudentInfo
-                student = StudentInfo(
-                    name=app_form.name,
-                    gender=app_form.gender,
-                    phone=app_form.phone,
-                    address=app_form.address,
-                    email=app_form.email,
-                    birthday=app_form.birthday,
-                    status=True,
-                    application_form_id=app_form.id
                 )
                 db.session.add(student)
                 db.session.commit()

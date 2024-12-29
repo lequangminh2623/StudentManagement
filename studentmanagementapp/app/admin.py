@@ -1,8 +1,14 @@
+from datetime import date
+
 from flask_admin import AdminIndexView, expose, Admin, BaseView
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from app import db, app, dao
 from app.dao import get_summary_report, get_subjects, get_semesters, get_school_years
-from app.models import Classroom, Grade, ApplicationForm, Curriculum, \
-    Subject, StudentInfo, Rule, ApplicationFormStatus, Score, Role, User, Semester, SchoolYear, ClassroomTransfer
+from app.models import Classroom, Grade, Curriculum, \
+    Subject, StudentInfo, Rule, Role, User, Semester, SchoolYear, StaffInfo
 from flask_admin.contrib.sqla import ModelView
 from flask_login import current_user, logout_user
 from flask import redirect, url_for, flash, request, Response, render_template, make_response, send_file, jsonify
@@ -53,14 +59,20 @@ class BaseStaffModelView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect('/login')
 
-class ApplicationView(BaseStaffModelView):
-    column_list = ['name', 'gender', 'phone', 'address', 'email', 'birthday', 'status']
-    column_filters = ['status', 'birthday']
+class StudentInfoView(BaseStaffModelView):
+    column_list = ['name', 'gender', 'birthday', 'address', 'phone', 'email']
+    form_columns = ['name', 'gender', 'birthday', 'address', 'phone', 'email']
     column_searchable_list = ['name']
-    column_default_sort = ('status', True)
 
-    column_editable_list = ['status']
-
+    def on_model_change(self, form, model, is_created):
+        try:
+            db.session.add(model)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash('Student age is not appropriate', 'error')
+            return False
+        return True
 
 class RuleView(BaseAdminModelView):
     column_list = ['id', 'rule_name', 'rule_content']
@@ -80,10 +92,6 @@ class RuleView(BaseAdminModelView):
 class CurriculumView(BaseAdminModelView):
     column_list = ['subject', 'grade', 'grade.school_year']
     column_labels = {'grade.school_year': 'School Year'}
-
-
-class StudentInfoView(BaseAdminModelView):
-    column_list = ['name']
 
 
 class ClassroomView(BaseAdminModelView):
@@ -169,7 +177,6 @@ class BangDiemHocKy(BaseAdminView):
             selected_subject_id=selected_subject_id,
             selected_school_year_id=selected_school_year_id,
             selected_semester_id=selected_semester_id,
-            # Truyền các giá trị đã chọn
             selected_subject=selected_subject,
             selected_school_year=selected_school_year,
             selected_semester=selected_semester
@@ -191,30 +198,30 @@ class Students(BaseStaffView):
             classroom_id = data.get('classroom_id')
 
             if not student_id or not classroom_id:
-                return '', 400  # Trả về 400 nếu có lỗi
+                return '', 400
 
-            # Call the function to change student's classroom
             is_success = dao.change_student_classroom(student_id, classroom_id)
 
             if is_success:
                 flash('Successfully changed classroom!')
-                return '', 200  # Thành công, trả về mã 200 mà không có dữ liệu
+                return '', 200
             else:
-                return '', 500  # Lỗi xảy ra khi thay đổi lớp, trả về 500
+                return '', 500
         except Exception as e:
-            return '', 500  # Nếu có lỗi, trả về mã lỗi 500
+            return '', 500
 
     @expose('/students_in_classroom', methods=['GET', 'POST'])
     def students_in_classroom(self):
         try:
             data = request.json
             classroom_id = data.get('classroom_id')
+            kw = request.args.get('kw', None)
 
             if not classroom_id:
                 return jsonify({"error": "Không có classroom_id"}), 400
 
             # Lấy danh sách học sinh từ DAO
-            students = dao.get_students_by_classroom(classroom_id)
+            students = dao.get_students_by_classroom(classroom_id, kw)
             classrooms = dao.get_classroom_in_same_grade(classroom_id)
 
             if not students:
@@ -223,7 +230,6 @@ class Students(BaseStaffView):
             # Lấy sĩ số lớp từ DAO
             total_students = dao.get_classroom_and_student_count(classroom_id)
 
-            # Chuyển đổi đối tượng ApplicationForm thành JSON
             students_data = [
                 {
                     "id": student.id,
@@ -263,15 +269,32 @@ class Students(BaseStaffView):
             print(f"Error: {e}")
             return jsonify({"error": "An error occurred"}), 500
 
+class AutoArrangeClass(BaseStaffView):
+    @expose('/')
+    def index(self):
+        return self.render('admin/auto_arrange_class.html')
+
+    @expose('/arrange', methods=['POST'])
+    def arrange(self):
+        try:
+            success = dao.auto_arrange_classes()
+            if success:
+                flash('Classes have been auto-arranged successfully!', 'success')
+            else:
+                flash('Failed to auto-arrange classes.', 'error')
+        except Exception as e:
+            flash(f'An error occurred: {str(e)}', 'error')
+        return redirect(url_for('autoarrangeclass.index'))
 
 
+
+admin.add_view(AutoArrangeClass(name='Auto Arrange Classes', endpoint='autoarrangeclass'))
 admin.add_view(ClassroomView(Classroom, db.session))
-admin.add_view(ApplicationView(ApplicationForm, db.session))
 admin.add_view(CurriculumView(Curriculum, db.session))
 admin.add_view(StudentInfoView(StudentInfo, db.session))
 admin.add_view(RuleView(Rule, db.session))
 admin.add_view(SubjectView(Subject, db.session))
 admin.add_view(BaseAdminModelView(User, db.session))
 admin.add_view(BangDiemHocKy(name='Stats'))
-admin.add_view(Students(name='Students'))
+admin.add_view(Students(name='Class List'))
 admin.add_view(LogoutView(name='Logout'))
